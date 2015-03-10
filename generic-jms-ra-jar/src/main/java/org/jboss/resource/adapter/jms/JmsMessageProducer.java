@@ -21,6 +21,7 @@
  */
 package org.jboss.resource.adapter.jms;
 
+import javax.jms.CompletionListener;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -170,6 +171,39 @@ public class JmsMessageProducer implements MessageProducer {
 
     public void setTimeToLive(long timeToLive) throws JMSException {
         producer.setTimeToLive(timeToLive);
+    }
+
+    // -- JMS 2.0 API
+
+
+    @Override
+    public void setDeliveryDelay(long deliveryDelay) throws JMSException {
+        producer.setDeliveryDelay(deliveryDelay);
+    }
+
+    @Override
+    public long getDeliveryDelay() throws JMSException {
+        return producer.getDeliveryDelay();
+    }
+
+    @Override
+    public void send(Message message, CompletionListener completionListener) throws JMSException {
+        producer.send(message, completionListener);
+    }
+
+    @Override
+    public void send(Message message, int deliveryMode, int priority, long timeToLive, CompletionListener completionListener) throws JMSException {
+        producer.send(message, deliveryMode, priority, timeToLive, completionListener);
+    }
+
+    @Override
+    public void send(Destination destination, Message message, CompletionListener completionListener) throws JMSException {
+        producer.send(destination, message, completionListener);
+    }
+
+    @Override
+    public void send(Destination destination, Message message, int deliveryMode, int priority, long timeToLive, CompletionListener completionListener) throws JMSException {
+        producer.send(destination, message, deliveryMode, priority, timeToLive, completionListener);
     }
 
     void closeProducer() throws JMSException {

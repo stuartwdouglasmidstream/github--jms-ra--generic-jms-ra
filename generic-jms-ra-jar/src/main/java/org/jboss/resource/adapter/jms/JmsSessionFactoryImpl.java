@@ -29,6 +29,7 @@ import javax.jms.ConnectionMetaData;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.IllegalStateException;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.QueueSession;
@@ -38,6 +39,7 @@ import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.Topic;
 import javax.jms.TopicSession;
+import javax.jms.XAJMSContext;
 import javax.naming.Reference;
 import javax.resource.Referenceable;
 import javax.resource.spi.ConnectionManager;
@@ -339,6 +341,33 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
         checkClosed();
 
         return allocateConnection(transacted, acknowledgeMode, type);
+    }
+
+    // -- JMS 2.0
+
+
+    @Override
+    public Session createSession(int sessionMode) throws JMSException {
+        checkClosed();
+
+        // FIXME not sure about the transacted value...
+        return allocateConnection(sessionMode == Session.SESSION_TRANSACTED, sessionMode, type);
+    }
+
+    @Override
+    public Session createSession() throws JMSException {
+        // FIXME not sure about the transacted value...
+        return allocateConnection(false, Session.AUTO_ACKNOWLEDGE, type);
+    }
+
+    @Override
+    public ConnectionConsumer createSharedConnectionConsumer(Topic topic, String subscriptionName, String messageSelector, ServerSessionPool sessionPool, int maxMessages) throws JMSException {
+        throw new IllegalStateException(ISE);
+    }
+
+    @Override
+    public ConnectionConsumer createSharedDurableConnectionConsumer(Topic topic, String subscriptionName, String messageSelector, ServerSessionPool sessionPool, int maxMessages) throws JMSException {
+        throw new IllegalStateException(ISE);
     }
 
     protected JmsSession allocateConnection(boolean transacted, int acknowledgeMode, int sessionType) throws JMSException {

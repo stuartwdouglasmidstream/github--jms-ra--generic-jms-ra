@@ -22,7 +22,6 @@
 package org.jboss.resource.adapter.jms;
 
 import java.io.Serializable;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -30,11 +29,13 @@ import javax.jms.BytesMessage;
 import javax.jms.Destination;
 import javax.jms.IllegalStateException;
 import javax.jms.InvalidDestinationException;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
-import javax.jms.MessageListener;
+import javax.jms.JMSRuntimeException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
@@ -153,6 +154,19 @@ public class JmsSession implements Session, QueueSession, TopicSession {
             log.trace("getSession " + session + " for " + this);
         return session;
     }
+
+    JMSContext getJMSContext() {
+        // ensure that the connection is opened
+        if (mc == null) {
+            throw new JMSRuntimeException("The session is closed");
+        }
+
+        JMSContext context = mc.getJMSContext();
+        if (trace)
+            log.trace("getJMSContext " + context + " for " + this);
+        return context;
+    }
+
 
     // ---- Session API
 
@@ -633,6 +647,133 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         return info.getAcknowledgeMode();
     }
 
+    // - JMS 2.0 API
+
+    @Override
+    public MessageConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName) throws JMSException {
+        if (info.getType() == JmsConnectionFactory.QUEUE) {
+            throw new IllegalStateException("Cannot create shared consumer for javax.jms.QueueSession");
+        }
+        lock();
+        try {
+            Session session = getSession();
+            if (trace)
+                log.trace("createSharedConsumer " + session + " topic=" + topic + " sharedSubscriptionName=" + sharedSubscriptionName);
+            MessageConsumer result = session.createSharedConsumer(topic, sharedSubscriptionName);
+            result = new JmsMessageConsumer(result, this);
+            if (trace)
+                log.trace("createSharedConsumer " + session + " consumer=" + result);
+            addConsumer(result);
+            return result;
+        } finally {
+            unlock();
+        }
+    }
+
+    @Override
+    public MessageConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName, String messageSelector) throws JMSException {
+        if (info.getType() == JmsConnectionFactory.QUEUE) {
+            throw new IllegalStateException("Cannot create shared consumer for javax.jms.QueueSession");
+        }
+        lock();
+        try {
+            Session session = getSession();
+            if (trace)
+                log.trace("createSharedConsumer " + session + " topic=" + topic + " sharedSubscriptionName=" + sharedSubscriptionName + " messageSelector=" + messageSelector);
+            MessageConsumer result = session.createSharedConsumer(topic, sharedSubscriptionName, messageSelector);
+            result = new JmsMessageConsumer(result, this);
+            if (trace)
+                log.trace("createSharedConsumer " + session + " consumer=" + result);
+            addConsumer(result);
+            return result;
+        } finally {
+            unlock();
+        }
+    }
+
+    @Override
+    public MessageConsumer createDurableConsumer(Topic topic, String name) throws JMSException {
+        if (info.getType() == JmsConnectionFactory.QUEUE) {
+            throw new IllegalStateException("Cannot create durable consumer for javax.jms.QueueSession");
+        }
+        lock();
+        try {
+            Session session = getSession();
+            if (trace)
+                log.trace("createDurableConsumer " + session + " topic=" + topic + " name=" + name);
+            MessageConsumer result = session.createDurableConsumer(topic, name);
+            result = new JmsMessageConsumer(result, this);
+            if (trace)
+                log.trace("createDurableConsumer " + session + " consumer=" + result);
+            addConsumer(result);
+            return result;
+        } finally {
+            unlock();
+        }
+    }
+
+    @Override
+    public MessageConsumer createDurableConsumer(Topic topic, String name, String messageSelector, boolean noLocal) throws JMSException {
+        if (info.getType() == JmsConnectionFactory.QUEUE) {
+            throw new IllegalStateException("Cannot create durable consumer for javax.jms.QueueSession");
+        }
+        lock();
+        try {
+            Session session = getSession();
+            if (trace)
+                log.trace("createDurableConsumer " + session + " topic=" + topic + " name=" + name + " messageSelector=" + messageSelector + " noLocal=" + noLocal);
+            MessageConsumer result = session.createDurableConsumer(topic, name, messageSelector, noLocal);
+            result = new JmsMessageConsumer(result, this);
+            if (trace)
+                log.trace("createDurableConsumer " + session + " consumer=" + result);
+            addConsumer(result);
+            return result;
+        } finally {
+            unlock();
+        }
+    }
+
+    @Override
+    public MessageConsumer createSharedDurableConsumer(Topic topic, String name) throws JMSException {
+        if (info.getType() == JmsConnectionFactory.QUEUE) {
+            throw new IllegalStateException("Cannot create shared consumer for javax.jms.QueueSession");
+        }
+        lock();
+        try {
+            Session session = getSession();
+            if (trace)
+                log.trace("createSharedDurableConsumer " + session + " topic=" + topic + " name=" + name);
+            MessageConsumer result = session.createSharedDurableConsumer(topic, name);
+            result = new JmsMessageConsumer(result, this);
+            if (trace)
+                log.trace("createDurableConsumer " + session + " consumer=" + result);
+            addConsumer(result);
+            return result;
+        } finally {
+            unlock();
+        }
+    }
+
+    @Override
+    public MessageConsumer createSharedDurableConsumer(Topic topic, String name, String messageSelector) throws JMSException {
+        if (info.getType() == JmsConnectionFactory.QUEUE) {
+            throw new IllegalStateException("Cannot create shared consumer for javax.jms.QueueSession");
+        }
+        lock();
+        try {
+            Session session = getSession();
+            if (trace)
+                log.trace("createSharedDurableConsumer " + session + " topic=" + topic + " name=" + name + " messageSelector=" + messageSelector);
+            MessageConsumer result = session.createSharedDurableConsumer(topic, name, messageSelector);
+            result = new JmsMessageConsumer(result, this);
+            if (trace)
+                log.trace("createDurableConsumer " + session + " consumer=" + result);
+            addConsumer(result);
+            return result;
+        } finally {
+            unlock();
+        }    }
+
     // --- JmsManagedConnection api
 
     void setManagedConnection(final JmsManagedConnection mc) {
@@ -741,4 +882,6 @@ public class JmsSession implements Session, QueueSession, TopicSession {
             throw new InvalidDestinationException("Attempting to use TopicSession methods on: " + this);
         return (TopicSession) s;
     }
+
+    //
 }
