@@ -27,6 +27,7 @@ import org.jboss.resource.adapter.jms.inflow.JmsActivation;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.ExceptionListener;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.QueueConnection;
 import javax.jms.QueueConnectionFactory;
@@ -36,6 +37,7 @@ import javax.jms.TopicConnection;
 import javax.jms.TopicConnectionFactory;
 import javax.jms.XAConnection;
 import javax.jms.XAConnectionFactory;
+import javax.jms.XAJMSContext;
 import javax.jms.XAQueueConnection;
 import javax.jms.XAQueueConnectionFactory;
 import javax.jms.XAQueueSession;
@@ -149,6 +151,8 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
     private XASession xaSession;
     private XAResource xaResource;
     private boolean xaTransacted;
+    private JMSContext context;
+    private XAJMSContext xaContext;
 
     /**
      * Holds all current JmsSession handles.
@@ -544,6 +548,13 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
     }
 
     /**
+     * Get the JMSContext for this connection.
+     */
+    protected JMSContext getJMSContext() {
+        return context;
+    }
+
+    /**
      * Send an event.
      *
      * @param event The event to send.
@@ -659,6 +670,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
             con = createConnection(factory, user, pwd);
             if (info.getClientID() != null && !info.getClientID().equals(con.getClientID())) {
                 con.setClientID(info.getClientID());
+                this.context.setClientID(info.getClientID());
             }
             con.setExceptionListener(this);
             if (trace) {
@@ -739,6 +751,8 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                 } else {
                     connection = qFactory.createXAConnection(username, password);
                 }
+                xaContext = qFactory.createXAContext(username, password);
+                context = xaContext.getContext();
             } else {
                 if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
                     connection = ((XAQueueConnectionFactory)qFactory).createXAQueueConnection();
@@ -747,6 +761,8 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                 } else {
                     connection = qFactory.createXAConnection();
                 }
+                xaContext = qFactory.createXAContext();
+                context = xaContext.getContext();
             }
 
             log.debug("created XAConnection: " + connection);
@@ -760,6 +776,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                 } else {
                     connection = qFactory.createConnection(username, password);
                 }
+                context = qFactory.createContext(username, password);
             } else {
                if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
                    connection = ((QueueConnectionFactory)qFactory).createQueueConnection();
@@ -768,6 +785,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                } else {
                    connection = qFactory.createConnection();
                }
+                context = qFactory.createContext();
             }
 
             log.debug("created " + mcf.getProperties().getSessionDefaultType() + " connection: " + connection);

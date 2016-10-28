@@ -22,8 +22,11 @@
 package org.jboss.resource.adapter.jms;
 
 import javax.jms.Connection;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
+import javax.jms.JMSRuntimeException;
 import javax.jms.QueueConnection;
+import javax.jms.Session;
 import javax.jms.TopicConnection;
 import javax.naming.Reference;
 import javax.resource.Referenceable;
@@ -155,5 +158,37 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
         }
 
         return s;
+    }
+
+    // -- JMS 2.0
+
+
+    @Override
+    public JMSContext createContext() {
+        return createContext(null, null);
+    }
+
+    @Override
+    public JMSContext createContext(String userName, String password) {
+        return createContext(userName, password, Session.AUTO_ACKNOWLEDGE);
+    }
+
+    @Override
+    public JMSContext createContext(int sessionMode) {
+        return createContext(null, null, sessionMode);
+    }
+
+    @Override
+    public JMSContext createContext(String userName, String password, int sessionMode) {
+        JmsSessionFactoryImpl s = new JmsSessionFactoryImpl(mcf, cm, AGNOSTIC);
+        s.setUserName(userName);
+        s.setPassword(password);
+
+        try {
+            JmsSession session = s.allocateConnection(sessionMode == Session.SESSION_TRANSACTED, sessionMode, AGNOSTIC);
+            return new GenericJmsContext(session.getJMSContext());
+        } catch (JMSException e) {
+            throw new JMSRuntimeException(e.getMessage());
+        }
     }
 }

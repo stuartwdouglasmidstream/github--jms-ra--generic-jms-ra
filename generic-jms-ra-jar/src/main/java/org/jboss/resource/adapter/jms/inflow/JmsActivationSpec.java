@@ -220,6 +220,24 @@ public class JmsActivationSpec implements ActivationSpec {
     }
 
     /**
+     * Standard JMS 2.0 resource adapter property to lookup the destination.
+     *
+     * @return the destination.
+     */
+    public String getDestinationLookup() {
+        return getDestination();
+    }
+
+    /**
+     * Standard JMS 2.0 resource adapter property to lookup the destination.
+     *
+     * @param destinationLookup The destination to set.
+     */
+    public void setDestinationLookup(String destinationLookup) {
+        setDestination(destinationLookup);
+    }
+
+    /**
      * @return the destinationType.
      */
     public String getDestinationType() {
@@ -495,5 +513,23 @@ public class JmsActivationSpec implements ActivationSpec {
 
     public String getConnectionFactory() {
         return connectionFactory;
+    }
+
+    /**
+     * Standard JMS 2.0 resource adapter property to lookup the connection factory.
+     *
+     * @param connectionFactoryLookup The connection factory to set.
+     */
+    public void setConnectionFactoryLookup(String connectionFactoryLookup) {
+        setConnectionFactory(connectionFactoryLookup);
+    }
+
+    /**
+     * Standard JMS 2.0 resource adapter property to lookup the connection factory.
+     *
+     * @return the connection factory.
+     */
+    public String getConnectionFactoryLookup() {
+        return getConnectionFactory();
     }
 }
