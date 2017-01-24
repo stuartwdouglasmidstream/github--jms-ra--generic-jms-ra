@@ -30,6 +30,7 @@ import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
+import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import javax.jms.JMSRuntimeException;
 import javax.jms.MapMessage;
@@ -37,6 +38,7 @@ import javax.jms.Message;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.QueueBrowser;
+import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
@@ -50,10 +52,12 @@ public class GenericJmsContext implements JMSContext {
 
     private static final String ILLEGAL_METHOD = "This method is not applicable inside the application server. See the JEE spec, e.g. JEE 7 Section 6.7";
 
-    private final JMSContext context;
+    private final JmsSessionFactory sessionFactory;
+    private final JmsSession session;
 
-    GenericJmsContext(JMSContext context) {
-        this.context = context;
+    GenericJmsContext(JmsSessionFactory sessionFactory, JmsSession session) {
+        this.sessionFactory = sessionFactory;
+        this.session = session;
     }
 
     @Override
@@ -63,12 +67,12 @@ public class GenericJmsContext implements JMSContext {
 
     @Override
     public JMSProducer createProducer() {
-        return context.createProducer();
+        return session.getJMSContext().createProducer();
     }
 
     @Override
     public String getClientID() {
-        return context.getClientID();
+        return session.getJMSContext().getClientID();
     }
 
     @Override
@@ -78,12 +82,12 @@ public class GenericJmsContext implements JMSContext {
 
     @Override
     public ConnectionMetaData getMetaData() {
-        return context.getMetaData();
+        return session.getJMSContext().getMetaData();
     }
 
     @Override
     public ExceptionListener getExceptionListener() {
-        return context.getExceptionListener();
+        return session.getJMSContext().getExceptionListener();
     }
 
     @Override
@@ -93,7 +97,7 @@ public class GenericJmsContext implements JMSContext {
 
     @Override
     public void start() {
-        context.start();
+        session.getJMSContext().start();
     }
 
     @Override
@@ -103,167 +107,172 @@ public class GenericJmsContext implements JMSContext {
 
     @Override
     public void setAutoStart(boolean autoStart) {
-        context.setAutoStart(autoStart);
+        session.getJMSContext().setAutoStart(autoStart);
     }
 
     @Override
     public boolean getAutoStart() {
-        return context.getAutoStart();
+        return session.getJMSContext().getAutoStart();
     }
 
     @Override
     public void close() {
-        context.close();
+        // #17 - close the session factory to return the managed connection to the pool
+        try {
+            sessionFactory.close();
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public BytesMessage createBytesMessage() {
-        return context.createBytesMessage();
+        return session.getJMSContext().createBytesMessage();
     }
 
     @Override
     public MapMessage createMapMessage() {
-        return context.createMapMessage();
+        return session.getJMSContext().createMapMessage();
     }
 
     @Override
     public Message createMessage() {
-        return context.createMessage();
+        return session.getJMSContext().createMessage();
     }
 
     @Override
     public ObjectMessage createObjectMessage() {
-        return context.createObjectMessage();
+        return session.getJMSContext().createObjectMessage();
     }
 
     @Override
     public ObjectMessage createObjectMessage(Serializable object) {
-        return context.createObjectMessage(object);
+        return session.getJMSContext().createObjectMessage(object);
     }
 
     @Override
     public StreamMessage createStreamMessage() {
-        return context.createStreamMessage();
+        return session.getJMSContext().createStreamMessage();
     }
 
     @Override
     public TextMessage createTextMessage() {
-        return context.createTextMessage();
+        return session.getJMSContext().createTextMessage();
     }
 
     @Override
     public TextMessage createTextMessage(String text) {
-        return context.createTextMessage(text);
+        return session.getJMSContext().createTextMessage(text);
     }
 
     @Override
     public boolean getTransacted() {
-        return context.getTransacted();
+        return session.getJMSContext().getTransacted();
     }
 
     @Override
     public int getSessionMode() {
-        return context.getSessionMode();
+        return session.getJMSContext().getSessionMode();
     }
 
     @Override
     public void commit() {
-        context.commit();
+        session.getJMSContext().commit();
     }
 
     @Override
     public void rollback() {
-        context.rollback();
+        session.getJMSContext().rollback();
 
     }
 
     @Override
     public void recover() {
-        context.recover();
+        session.getJMSContext().recover();
     }
 
     @Override
     public JMSConsumer createConsumer(Destination destination) {
-        return context.createConsumer(destination);
+        return session.getJMSContext().createConsumer(destination);
     }
 
     @Override
     public JMSConsumer createConsumer(Destination destination, String messageSelector) {
-        return context.createConsumer(destination, messageSelector);
+        return session.getJMSContext().createConsumer(destination, messageSelector);
     }
 
     @Override
     public JMSConsumer createConsumer(Destination destination, String messageSelector, boolean noLocal) {
-        return context.createConsumer(destination, messageSelector, noLocal);
+        return session.getJMSContext().createConsumer(destination, messageSelector, noLocal);
     }
 
     @Override
     public Queue createQueue(String queueName) {
-        return context.createQueue(queueName);
+        return session.getJMSContext().createQueue(queueName);
     }
 
     @Override
     public Topic createTopic(String topicName) {
-        return context.createTopic(topicName);
+        return session.getJMSContext().createTopic(topicName);
     }
 
     @Override
     public JMSConsumer createDurableConsumer(Topic topic, String name) {
-        return context.createDurableConsumer(topic, name);
+        return session.getJMSContext().createDurableConsumer(topic, name);
     }
 
     @Override
     public JMSConsumer createDurableConsumer(Topic topic, String name, String messageSelector, boolean noLocal) {
-        return context.createDurableConsumer(topic, name, messageSelector, noLocal);
+        return session.getJMSContext().createDurableConsumer(topic, name, messageSelector, noLocal);
     }
 
     @Override
     public JMSConsumer createSharedDurableConsumer(Topic topic, String name) {
-        return context.createSharedDurableConsumer(topic, name);
+        return session.getJMSContext().createSharedDurableConsumer(topic, name);
     }
 
     @Override
     public JMSConsumer createSharedDurableConsumer(Topic topic, String name, String messageSelector) {
-        return context.createSharedDurableConsumer(topic, name, messageSelector);
+        return session.getJMSContext().createSharedDurableConsumer(topic, name, messageSelector);
     }
 
     @Override
     public JMSConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName) {
-        return context.createSharedConsumer(topic, sharedSubscriptionName);
+        return session.getJMSContext().createSharedConsumer(topic, sharedSubscriptionName);
     }
 
     @Override
     public JMSConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName, String messageSelector) {
-        return context.createSharedConsumer(topic, sharedSubscriptionName, messageSelector);
+        return session.getJMSContext().createSharedConsumer(topic, sharedSubscriptionName, messageSelector);
     }
 
     @Override
     public QueueBrowser createBrowser(Queue queue) {
-        return context.createBrowser(queue);
+        return session.getJMSContext().createBrowser(queue);
     }
 
     @Override
     public QueueBrowser createBrowser(Queue queue, String messageSelector) {
-        return context.createBrowser(queue, messageSelector);
+        return session.getJMSContext().createBrowser(queue, messageSelector);
     }
 
     @Override
     public TemporaryQueue createTemporaryQueue() {
-        return context.createTemporaryQueue();
+        return session.getJMSContext().createTemporaryQueue();
     }
 
     @Override
     public TemporaryTopic createTemporaryTopic() {
-        return context.createTemporaryTopic();
+        return session.getJMSContext().createTemporaryTopic();
     }
 
     @Override
     public void unsubscribe(String name) {
-        context.unsubscribe(name);
+        session.getJMSContext().unsubscribe(name);
     }
 
     @Override
     public void acknowledge() {
-        context.acknowledge();
+        session.getJMSContext().acknowledge();
     }
 }
