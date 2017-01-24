@@ -186,7 +186,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
 
         try {
             JmsSession session = s.allocateConnection(sessionMode == Session.SESSION_TRANSACTED, sessionMode, AGNOSTIC);
-            return new GenericJmsContext(session.getJMSContext());
+            return new GenericJmsContext(s, session);
         } catch (JMSException e) {
             throw new JMSRuntimeException(e.getMessage());
         }
