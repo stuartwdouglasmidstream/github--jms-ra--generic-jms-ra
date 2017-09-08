@@ -10,8 +10,8 @@
     <display-name>Generic JMS Adapter</display-name>
 
     <vendor-name>Red Hat Middleware LLC</vendor-name>
-    <eis-type>JMS 1.1 Server</eis-type>
-    <resourceadapter-version>5.0</resourceadapter-version>
+    <eis-type>JMS 2.0 Server</eis-type>
+    <resourceadapter-version>7.1</resourceadapter-version>
 
     <license>
         <description>

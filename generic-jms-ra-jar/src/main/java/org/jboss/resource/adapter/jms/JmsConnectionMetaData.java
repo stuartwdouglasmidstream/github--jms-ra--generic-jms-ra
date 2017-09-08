@@ -35,15 +35,15 @@ import javax.jms.ConnectionMetaData;
  */
 public class JmsConnectionMetaData implements ConnectionMetaData {
     public String getJMSVersion() {
-        return "1.1";
+        return "2.0";
     }
 
     public int getJMSMajorVersion() {
-        return 1;
+        return 2;
     }
 
     public int getJMSMinorVersion() {
-        return 1;
+        return 0;
     }
 
     public String getJMSProviderName() {
@@ -51,15 +51,15 @@ public class JmsConnectionMetaData implements ConnectionMetaData {
     }
 
     public String getProviderVersion() {
-        return "5.0";
+        return "7.1";
     }
 
     public int getProviderMajorVersion() {
-        return 5;
+        return 7;
     }
 
     public int getProviderMinorVersion() {
-        return 0;
+        return 1;
     }
 
     public Enumeration getJMSXPropertyNames() {
