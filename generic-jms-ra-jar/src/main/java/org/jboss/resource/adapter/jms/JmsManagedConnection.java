@@ -192,7 +192,11 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                 destroy();
             } catch (Throwable ignored) {
             }
-            throw new ResourceException(t);
+            if (t instanceof ResourceException) {
+                throw (ResourceException)t;
+            } else {
+                throw new ResourceException(t);
+            }
         }
     }
 
