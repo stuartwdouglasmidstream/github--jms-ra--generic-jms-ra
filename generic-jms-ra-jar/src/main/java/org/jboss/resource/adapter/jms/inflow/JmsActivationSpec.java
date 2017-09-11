@@ -206,6 +206,20 @@ public class JmsActivationSpec implements ActivationSpec {
     }
 
     /**
+     * @return the clientId.
+     */
+    public String getClientID() {
+        return clientId;
+    }
+
+    /**
+     * @param clientId The clientId to set.
+     */
+    public void setClientID(String clientId) {
+        this.clientId = clientId;
+    }
+
+    /**
      * @return the destination.
      */
     public String getDestination() {
