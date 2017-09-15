@@ -25,6 +25,8 @@ import javax.jms.Connection;
 import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.JMSRuntimeException;
+import javax.jms.JMSSecurityException;
+import javax.jms.JMSSecurityRuntimeException;
 import javax.jms.QueueConnection;
 import javax.jms.Session;
 import javax.jms.TopicConnection;
@@ -109,7 +111,50 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
             log.trace("Created queue connection: " + s);
         }
 
+        checkUserCredentials(s);
         return s;
+    }
+
+    /**
+     * Check user credentials by creating an actual JMS connection and closes it
+     */
+    private void checkUserCredentials(JmsSessionFactoryImpl sessionFactory) throws JMSException {
+        Session session = null;
+        try {
+            session = sessionFactory.createSession();
+        } catch (JMSException e) {
+            JMSException jmse = findRootJMSException(e);
+            if (jmse != null) {
+                throw jmse;
+            } else {
+                throw e;
+            }
+        }
+        finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    private static JMSException findRootJMSException(JMSException jmse) {
+        if (jmse.getLinkedException() != null) {
+            Throwable rootCause = getRootCause(jmse.getLinkedException());
+            if (rootCause instanceof JMSException) {
+                return (JMSException) rootCause;
+            }
+        }
+        return jmse;
+    }
+
+    private static Throwable getRootCause(Throwable t) {
+        Throwable cause;
+        Throwable result = t;
+
+        while(null != (cause = result.getCause())  && (result != cause) ) {
+            result = cause;
+        }
+        return result;
     }
 
     // --- TopicConnectionFactory
@@ -133,6 +178,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
             log.trace("Created topic connection: " + s);
         }
 
+        checkUserCredentials(s);
         return s;
     }
 
@@ -157,6 +203,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
             log.trace("Created connection: " + s);
         }
 
+        checkUserCredentials(s);
         return s;
     }
 
@@ -184,11 +231,18 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
         s.setUserName(userName);
         s.setPassword(password);
 
+        System.out.println("sessionMode = " + sessionMode);
+
         try {
             JmsSession session = s.allocateConnection(sessionMode == Session.SESSION_TRANSACTED, sessionMode, AGNOSTIC);
             return new GenericJmsContext(s, session);
         } catch (JMSException e) {
-            throw new JMSRuntimeException(e.getMessage());
+            JMSException jmse = findRootJMSException(e);
+            if (jmse instanceof JMSSecurityException) {
+                throw new JMSSecurityRuntimeException(jmse.getMessage());
+            } else {
+                throw new JMSRuntimeException(e.getMessage());
+            }
         }
     }
 }
