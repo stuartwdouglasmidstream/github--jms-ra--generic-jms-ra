@@ -344,14 +344,6 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
             throw new ResourceException("Still active locks for " + this);
         }
-
-        try {
-            if (con.getClientID() != null) {
-                throw new ResourceException("Cleaning up " + this + " bound to clientID = " + con.getClientID());
-            }
-        } catch (JMSException e) {
-            throw new ResourceException("Cleaning up " + this);
-        }
     }
 
     /**
@@ -674,7 +666,6 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
             con = createConnection(factory, user, pwd);
             if (info.getClientID() != null && !info.getClientID().equals(con.getClientID())) {
                 con.setClientID(info.getClientID());
-                this.context.setClientID(info.getClientID());
             }
             con.setExceptionListener(this);
             if (trace) {
