@@ -29,7 +29,6 @@ import javax.jms.ConnectionMetaData;
 import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.IllegalStateException;
-import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.QueueSession;
@@ -39,11 +38,15 @@ import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.Topic;
 import javax.jms.TopicSession;
-import javax.jms.XAJMSContext;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.resource.Referenceable;
 import javax.resource.spi.ConnectionManager;
 import javax.resource.spi.ManagedConnectionFactory;
+import javax.transaction.Status;
+import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.logging.Logger;
 //import org.jboss.resource.connectionmanager.JTATransactionChecker;
@@ -57,6 +60,7 @@ import org.jboss.logging.Logger;
  */
 public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     private static final Logger log = Logger.getLogger(JmsSessionFactoryImpl.class);
+    private static final String TRANSACTION_SYNCHRONIZATION_REGISTRY_LOOKUP = "java:comp/TransactionSynchronizationRegistry";
 
     /**
      * Are we closed?
@@ -103,6 +107,9 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
      * The temporary topics
      */
     private HashSet tempTopics = new HashSet();
+
+    // Cached reference to the transaction sync registry to determine if a transaction is active
+    private transient TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
     public JmsSessionFactoryImpl(final ManagedConnectionFactory mcf,
                                  final ConnectionManager cm,
@@ -340,6 +347,10 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
             throws JMSException {
         checkClosed();
 
+        if (isInTransaction()) {
+            transacted = true;
+            acknowledgeMode = 0;
+        }
         return allocateConnection(transacted, acknowledgeMode, type);
     }
 
@@ -350,14 +361,24 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     public Session createSession(int sessionMode) throws JMSException {
         checkClosed();
 
-        // FIXME not sure about the transacted value...
-        return allocateConnection(sessionMode == Session.SESSION_TRANSACTED, sessionMode, type);
+        boolean transacted = sessionMode == Session.SESSION_TRANSACTED;
+        if (isInTransaction()) {
+            transacted = true;
+            sessionMode = 0;
+        }
+        return allocateConnection(transacted, sessionMode, type);
     }
 
     @Override
     public Session createSession() throws JMSException {
-        // FIXME not sure about the transacted value...
-        return allocateConnection(false, Session.AUTO_ACKNOWLEDGE, type);
+        boolean transacted = false;
+        int sessionMode = Session.AUTO_ACKNOWLEDGE;
+
+        if (isInTransaction()) {
+            transacted = true;
+            sessionMode = 0;
+        }
+        return allocateConnection(transacted, sessionMode, type);
     }
 
     @Override
@@ -422,4 +443,43 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
         if (closed)
             throw new IllegalStateException("The connection is closed");
     }
+
+    /**
+     * check whether there is an active transaction.
+     */
+    private boolean isInTransaction() {
+        TransactionSynchronizationRegistry tsr = getTransactionSynchronizationRegistry();
+        boolean inTx = tsr.getTransactionStatus() == Status.STATUS_ACTIVE;
+        return inTx;
+    }
+
+    /**
+     * lookup the transactionSynchronizationRegistry and cache it.
+     */
+    private TransactionSynchronizationRegistry getTransactionSynchronizationRegistry() {
+        TransactionSynchronizationRegistry cachedTSR = transactionSynchronizationRegistry;
+        if (cachedTSR == null) {
+            cachedTSR = (TransactionSynchronizationRegistry) lookup(TRANSACTION_SYNCHRONIZATION_REGISTRY_LOOKUP);
+            transactionSynchronizationRegistry = cachedTSR;
+        }
+        return cachedTSR;
+    }
+
+    private Object lookup(String name) {
+        Context ctx = null;
+        try {
+            ctx = new InitialContext();
+            return ctx.lookup(name);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (ctx != null) {
+                try {
+                    ctx.close();
+                } catch (NamingException e) {
+                }
+            }
+        }
+    }
+
 }
