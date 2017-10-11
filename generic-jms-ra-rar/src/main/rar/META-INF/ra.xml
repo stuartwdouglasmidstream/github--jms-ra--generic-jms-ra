@@ -52,7 +52,7 @@
                     <config-property-value>XAConnectionFactory</config-property-value>
                 </config-property>
                 <config-property>
-                    <description>A comma-separated list of JNDI parameters</description>
+                    <description>A semicolon-separated list of JNDI parameters</description>
                     <config-property-name>JndiParameters</config-property-name>
                     <config-property-type>java.lang.String</config-property-type>
                     <config-property-value></config-property-value>
