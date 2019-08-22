@@ -165,7 +165,11 @@ public class JmsServerSession implements ServerSession, MessageListener, Work, W
                 endpoint.afterDelivery();
             }
         } catch (Throwable t) {
-            log.error("Unexpected error delivering message " + message, t);
+            try {
+               log.error("Unexpected error delivering message. JMSMessageID is " + message.getJMSMessageID(), t);
+            } catch (JMSException e) {
+               log.error("Unexpected error delivering message. JMSMessageID cannot be determined.", t);
+            }
         }
     }
 
