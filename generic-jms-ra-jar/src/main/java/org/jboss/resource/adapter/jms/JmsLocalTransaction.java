@@ -25,7 +25,6 @@ import javax.jms.JMSException;
 import javax.resource.ResourceException;
 import javax.resource.spi.LocalTransaction;
 
-
 /**
  * JMS Local transaction
  *
@@ -33,20 +32,24 @@ import javax.resource.spi.LocalTransaction;
  * @author <a href="mailto:adrian@jboss.com">Adrian Brock</a>
  */
 public class JmsLocalTransaction implements LocalTransaction {
+
     protected JmsManagedConnection mc;
 
     public JmsLocalTransaction(final JmsManagedConnection mc) {
         this.mc = mc;
     }
 
+    @Override
     public void begin() throws ResourceException {
     }
 
+    @Override
     public void commit() throws ResourceException {
         mc.lock();
         try {
-            if (mc.getSession().getTransacted())
+            if (mc.getSession().getTransacted()) {
                 mc.getSession().commit();
+            }
         } catch (JMSException e) {
             throw new ResourceException("Could not commit LocalTransaction", e);
         } finally {
@@ -54,11 +57,13 @@ public class JmsLocalTransaction implements LocalTransaction {
         }
     }
 
+    @Override
     public void rollback() throws ResourceException {
         mc.lock();
         try {
-            if (mc.getSession().getTransacted())
+            if (mc.getSession().getTransacted()) {
                 mc.getSession().rollback();
+            }
         } catch (JMSException ex) {
             throw new ResourceException("Could not rollback LocalTransaction", ex);
         } finally {

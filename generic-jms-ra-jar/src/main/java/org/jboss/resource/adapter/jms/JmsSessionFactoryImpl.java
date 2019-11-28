@@ -59,6 +59,7 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:adrian@jboss.com">Adrian Brock</a>
  */
 public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
+
     private static final Logger log = Logger.getLogger(JmsSessionFactoryImpl.class);
     private static final String TRANSACTION_SYNCHRONIZATION_REGISTRY_LOOKUP = "java:comp/TransactionSynchronizationRegistry";
 
@@ -96,49 +97,52 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     /**
      * The sessions
      */
-    private HashSet sessions = new HashSet();
+    private final HashSet<JmsSession> sessions = new HashSet<>();
 
     /**
      * The temporary queues
      */
-    private HashSet tempQueues = new HashSet();
+    private final HashSet<TemporaryQueue> tempQueues = new HashSet<>();
 
     /**
      * The temporary topics
      */
-    private HashSet tempTopics = new HashSet();
+    private final HashSet<TemporaryTopic> tempTopics = new HashSet<>();
 
     // Cached reference to the transaction sync registry to determine if a transaction is active
     private transient TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
     public JmsSessionFactoryImpl(final ManagedConnectionFactory mcf,
-                                 final ConnectionManager cm,
-                                 final int type) {
+            final ConnectionManager cm,
+            final int type) {
         this.mcf = (JmsManagedConnectionFactory) mcf;
         this.cm = cm;
 
-        if (cm == null)
+        if (cm == null) {
             // This is standalone usage, no appserver
             this.cm = new JmsConnectionManager();
-        else
+        } else {
             this.cm = cm;
+        }
 
         this.type = type;
 
-        if (trace)
+        if (trace) {
             log.trace("mcf=" + mcf + ", cm=" + cm + ", type=" + type);
+        }
     }
 
+    @Override
     public void setReference(final Reference reference) {
         this.reference = reference;
     }
 
+    @Override
     public Reference getReference() {
         return reference;
     }
 
     // --- API for JmsConnectionFactoryImpl
-
     public void setUserName(final String name) {
         userName = name;
     }
@@ -148,45 +152,48 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     }
 
     //---- QueueConnection ---
-
+    @Override
     public QueueSession createQueueSession(final boolean transacted,
-                                           final int acknowledgeMode)
+            final int acknowledgeMode)
             throws JMSException {
         checkClosed();
-        if (type == JmsConnectionFactory.TOPIC)
+        if (type == JmsConnectionFactory.TOPIC) {
             throw new IllegalStateException("Can not get a queue session from a topic connection");
+        }
         return allocateConnection(transacted, acknowledgeMode, type);
     }
 
-    public ConnectionConsumer createConnectionConsumer
-            (Queue queue,
-             String messageSelector,
-             ServerSessionPool sessionPool,
-             int maxMessages)
+    @Override
+    public ConnectionConsumer createConnectionConsumer(Queue queue,
+            String messageSelector,
+            ServerSessionPool sessionPool,
+            int maxMessages)
             throws JMSException {
         throw new IllegalStateException(ISE);
     }
 
     //--- TopicConnection ---
-
+    @Override
     public TopicSession createTopicSession(final boolean transacted,
-                                           final int acknowledgeMode)
+            final int acknowledgeMode)
             throws JMSException {
         checkClosed();
-        if (type == JmsConnectionFactory.QUEUE)
+        if (type == JmsConnectionFactory.QUEUE) {
             throw new IllegalStateException("Can not get a topic session from a queue connection");
+        }
         return allocateConnection(transacted, acknowledgeMode, type);
     }
 
-    public ConnectionConsumer createConnectionConsumer
-            (Topic topic,
-             String messageSelector,
-             ServerSessionPool sessionPool,
-             int maxMessages)
+    @Override
+    public ConnectionConsumer createConnectionConsumer(Topic topic,
+            String messageSelector,
+            ServerSessionPool sessionPool,
+            int maxMessages)
             throws JMSException {
         throw new IllegalStateException(ISE);
     }
 
+    @Override
     public ConnectionConsumer createDurableConnectionConsumer(
             Topic topic,
             String subscriptionName,
@@ -198,85 +205,98 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     }
 
     //--- All the Connection methods
-
+    @Override
     public String getClientID() throws JMSException {
         checkClosed();
 
-        if (clientID == null)
+        if (clientID == null) {
             return mcf.getClientID();
+        }
 
         return clientID;
     }
 
+    @Override
     public void setClientID(String cID) throws JMSException {
-        if (mcf.isStrict())
+        if (mcf.isStrict()) {
             throw new IllegalStateException(ISE);
+        }
 
         checkClosed();
-        if (clientID != null)
+        if (clientID != null) {
             throw new IllegalStateException("Cannot change client id");
+        }
         clientID = cID;
     }
 
+    @Override
     public ConnectionMetaData getMetaData() throws JMSException {
         checkClosed();
         return mcf.getMetaData();
     }
 
+    @Override
     public ExceptionListener getExceptionListener() throws JMSException {
         throw new IllegalStateException(ISE);
     }
 
+    @Override
     public void setExceptionListener(ExceptionListener listener)
             throws JMSException {
         throw new IllegalStateException(ISE);
     }
 
+    @Override
     public void start() throws JMSException {
         checkClosed();
-        if (trace)
+        if (trace) {
             log.trace("start() " + this);
+        }
         synchronized (sessions) {
-            if (started)
+            if (started) {
                 return;
+            }
             started = true;
-            for (Iterator i = sessions.iterator(); i.hasNext(); ) {
-                JmsSession session = (JmsSession) i.next();
-                session.start();
+            for (Iterator<JmsSession> i = sessions.iterator(); i.hasNext();) {
+                i.next().start();
             }
         }
     }
 
+    @Override
     public void stop() throws JMSException {
-        if (mcf.isStrict())
+        if (mcf.isStrict()) {
             throw new IllegalStateException(ISE);
+        }
         checkClosed();
-        if (trace)
+        if (trace) {
             log.trace("stop() " + this);
+        }
         synchronized (sessions) {
-            if (started == false)
+            if (started == false) {
                 return;
+            }
             started = true;
-            for (Iterator i = sessions.iterator(); i.hasNext(); ) {
-                JmsSession session = (JmsSession) i.next();
-                session.stop();
+            for (Iterator<JmsSession> i = sessions.iterator(); i.hasNext();) {
+                i.next().stop();
             }
         }
     }
 
     public void close() throws JMSException {
-        if (closed)
+        if (closed) {
             return;
+        }
         closed = true;
 
-        if (trace)
+        if (trace) {
             log.trace("close() " + this);
+        }
 
         synchronized (sessions) {
-            for (Iterator i = sessions.iterator(); i.hasNext(); ) {
-                JmsSession session = (JmsSession) i.next();
+            for (Iterator<JmsSession> i = sessions.iterator(); i.hasNext();) {
                 try {
-                    session.closeSession();
+                    i.next().closeSession();
                 } catch (Throwable t) {
                     log.trace("Error closing session", t);
                 }
@@ -286,11 +306,12 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
 
         if (mcf.isDeleteTemporaryDestinations()) {
             synchronized (tempQueues) {
-                for (Iterator i = tempQueues.iterator(); i.hasNext(); ) {
-                    TemporaryQueue temp = (TemporaryQueue) i.next();
+                for (Iterator<TemporaryQueue> i = tempQueues.iterator(); i.hasNext();) {
+                    TemporaryQueue temp = i.next();
                     try {
-                        if (trace)
+                        if (trace) {
                             log.trace("Closing temporary queue " + temp + " for " + this);
+                        }
                         temp.delete();
                     } catch (Throwable t) {
                         log.trace("Error deleting temporary queue", t);
@@ -300,11 +321,12 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
             }
 
             synchronized (tempTopics) {
-                for (Iterator i = tempTopics.iterator(); i.hasNext(); ) {
-                    TemporaryTopic temp = (TemporaryTopic) i.next();
+                for (Iterator<TemporaryTopic> i = tempTopics.iterator(); i.hasNext();) {
+                    TemporaryTopic temp = i.next();
                     try {
-                        if (trace)
+                        if (trace) {
                             log.trace("Closing temporary topic " + temp + " for " + this);
+                        }
                         temp.delete();
                     } catch (Throwable t) {
                         log.trace("Error deleting temporary topic", t);
@@ -315,12 +337,14 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
         }
     }
 
+    @Override
     public void closeSession(JmsSession session) throws JMSException {
         synchronized (sessions) {
             sessions.remove(session);
         }
     }
 
+    @Override
     public void addTemporaryQueue(TemporaryQueue temp) {
         synchronized (tempQueues) {
             tempQueues.add(temp);
@@ -334,15 +358,16 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     }
 
     // -- JMS 1.1
-
     public ConnectionConsumer createConnectionConsumer(Destination destination, ServerSessionPool pool, int maxMessages) throws JMSException {
         throw new IllegalStateException(ISE);
     }
 
+    @Override
     public ConnectionConsumer createConnectionConsumer(Destination destination, String name, ServerSessionPool pool, int maxMessages) throws JMSException {
         throw new IllegalStateException(ISE);
     }
 
+    @Override
     public Session createSession(boolean transacted, int acknowledgeMode)
             throws JMSException {
         checkClosed();
@@ -355,8 +380,6 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     }
 
     // -- JMS 2.0
-
-
     @Override
     public Session createSession(int sessionMode) throws JMSException {
         checkClosed();
@@ -394,8 +417,9 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
     protected JmsSession allocateConnection(boolean transacted, int acknowledgeMode, int sessionType) throws JMSException {
         try {
             synchronized (sessions) {
-                if (mcf.isStrict() && sessions.isEmpty() == false)
+                if (mcf.isStrict() && sessions.isEmpty() == false) {
                     throw new IllegalStateException("Only allowed one session per connection. See the J2EE spec, e.g. J2EE1.4 Section 6.6");
+                }
 
                 if (transacted) {
                     acknowledgeMode = Session.SESSION_TRANSACTED;
@@ -407,15 +431,18 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
                 info.setClientID(clientID);
                 info.setDefaults(mcf.getProperties());
 
-                if (trace)
+                if (trace) {
                     log.trace("Allocating session for " + this + " with request info=" + info);
+                }
                 JmsSession session = (JmsSession) cm.allocateConnection(mcf, info);
                 try {
-                    if (trace)
+                    if (trace) {
                         log.trace("Allocated  " + this + " session=" + session);
+                    }
                     session.setJmsSessionFactory(this);
-                    if (started)
+                    if (started) {
                         session.start();
+                    }
                     sessions.add(session);
                     return session;
                 } catch (Throwable t) {
@@ -423,25 +450,26 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
                         session.close();
                     } catch (Throwable ignored) {
                     }
-                    if (t instanceof Exception)
+                    if (t instanceof Exception) {
                         throw (Exception) t;
-                    else
+                    } else {
                         throw new RuntimeException("Unexpected error: ", t);
+                    }
                 }
             }
         } catch (Exception e) {
             log.error("could not create session", e);
 
-            JMSException je = new JMSException
-                    ("Could not create a session: " + e);
+            JMSException je = new JMSException("Could not create a session: " + e);
             je.setLinkedException(e);
             throw je;
         }
     }
 
     protected void checkClosed() throws IllegalStateException {
-        if (closed)
+        if (closed) {
             throw new IllegalStateException("The connection is closed");
+        }
     }
 
     /**

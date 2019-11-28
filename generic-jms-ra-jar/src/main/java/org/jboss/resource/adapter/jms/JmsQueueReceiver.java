@@ -41,6 +41,7 @@ public class JmsQueueReceiver extends JmsMessageConsumer implements QueueReceive
         super(consumer, session);
     }
 
+    @Override
     public Queue getQueue() throws JMSException {
         return ((QueueReceiver) consumer).getQueue();
     }

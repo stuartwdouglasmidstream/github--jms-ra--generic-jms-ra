@@ -42,9 +42,10 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 
 /**
+ * 
  * A generic jms session pool.
  *
- * @author <a href="adrian@jboss.com">Adrian Brock</a>
+ * @author <a href="mailto:adrian@jboss.com">Adrian Brock</a>
  * @author <a href="mailto:weston.price@jboss.com>Weston Price</a>
  * @author <a href="mailto:jbertram@rehat.com>Justin Bertram</a>
  */

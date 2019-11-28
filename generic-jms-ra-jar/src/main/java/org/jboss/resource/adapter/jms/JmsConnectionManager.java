@@ -58,6 +58,7 @@ public class JmsConnectionManager implements ConnectionManager {
      * @return A new connection
      * @throws ResourceException Failed to create connection.
      */
+    @Override
     public Object allocateConnection(ManagedConnectionFactory mcf, ConnectionRequestInfo cxRequestInfo) throws ResourceException {
         boolean trace = log.isTraceEnabled();
         if (trace) {

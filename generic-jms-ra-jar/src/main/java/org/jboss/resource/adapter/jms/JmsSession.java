@@ -76,7 +76,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     /**
      * The connection request info
      */
-    private JmsConnectionRequestInfo info;
+    private final JmsConnectionRequestInfo info;
 
     /**
      * The session factory for this session
@@ -86,12 +86,12 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     /**
      * The message consumers
      */
-    private HashSet consumers = new HashSet();
+    private HashSet<MessageConsumer> consumers = new HashSet<>();
 
     /**
      * The message producers
      */
-    private HashSet producers = new HashSet();
+    private HashSet<MessageProducer> producers = new HashSet<>();
 
     /**
      * Whether trace is enabled
@@ -102,14 +102,16 @@ public class JmsSession implements Session, QueueSession, TopicSession {
      * Construct a <tt>JmsSession</tt>.
      *
      * @param mc The managed connection for this session.
+     * @param info
      */
     public JmsSession(final JmsManagedConnection mc, JmsConnectionRequestInfo info) {
         this.mc = mc;
         this.lockedMC = null;
         this.lockCount = 0;
         this.info = info;
-        if (trace)
+        if (trace) {
             log.trace("new JmsSession " + this + " mc=" + mc + " cri=" + info);
+        }
     }
 
     public void setJmsSessionFactory(JmsSessionFactoryImpl sf) {
@@ -121,21 +123,25 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         if (mc != null) {
             mc.tryLock();
 
-            if (lockedMC == null)
+            if (lockedMC == null) {
                 lockedMC = mc;
+            }
 
             lockCount++;
-        } else
+        } else {
             throw new IllegalStateException("Connection is not associated with a managed connection. " + this);
+        }
     }
 
     protected void unlock() {
         JmsManagedConnection mc = this.lockedMC;
-        if (--lockCount == 0)
+        if (--lockCount == 0) {
             lockedMC = null;
+        }
 
-        if (mc != null)
+        if (mc != null) {
             mc.unlock();
+        }
     }
 
     /**
@@ -146,12 +152,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
      */
     Session getSession() throws JMSException {
         // ensure that the connection is opened
-        if (mc == null)
+        if (mc == null) {
             throw new IllegalStateException("The session is closed");
+        }
 
         Session session = mc.getSession();
-        if (trace)
+        if (trace) {
             log.trace("getSession " + session + " for " + this);
+        }
         return session;
     }
 
@@ -162,71 +170,89 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
 
         JMSContext context = mc.getJMSContext();
-        if (trace)
+        if (trace) {
             log.trace("getJMSContext " + context + " for " + this);
+        }
         return context;
     }
 
 
     // ---- Session API
 
+    @Override
     public BytesMessage createBytesMessage() throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createBytesMessage" + session);
+        }
         return session.createBytesMessage();
     }
 
+    @Override
     public MapMessage createMapMessage() throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createMapMessage" + session);
+        }
         return session.createMapMessage();
     }
 
+    @Override
     public Message createMessage() throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createMessage" + session);
+        }
         return session.createMessage();
     }
 
+    @Override
     public ObjectMessage createObjectMessage() throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createObjectMessage" + session);
+        }
         return session.createObjectMessage();
     }
 
+    @Override
     public ObjectMessage createObjectMessage(Serializable object) throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createObjectMessage(Object)" + session);
+        }
         return session.createObjectMessage(object);
     }
 
+    @Override
     public StreamMessage createStreamMessage() throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createStreamMessage" + session);
+        }
         return session.createStreamMessage();
     }
 
+    @Override
     public TextMessage createTextMessage() throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createTextMessage" + session);
+        }
         return session.createTextMessage();
     }
 
+    @Override
     public TextMessage createTextMessage(String string) throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createTextMessage(String)" + session);
+        }
         return session.createTextMessage(string);
     }
 
 
+    @Override
     public boolean getTransacted() throws JMSException {
         getSession(); // check closed
         return info.isTransacted();
@@ -499,6 +525,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         return result;
     }
 
+    @Override
     public QueueReceiver createReceiver(Queue queue) throws JMSException {
         lock();
         try {
@@ -516,6 +543,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public QueueReceiver createReceiver(Queue queue, String messageSelector) throws JMSException {
         lock();
         try {

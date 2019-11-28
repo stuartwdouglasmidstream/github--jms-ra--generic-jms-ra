@@ -50,7 +50,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
     /**
      * Settable attributes in ra.xml
      */
-    private JmsMCFProperties mcfProperties = new JmsMCFProperties();
+    private final JmsMCFProperties mcfProperties = new JmsMCFProperties();
 
     /**
      * Whether we are strict
@@ -72,15 +72,19 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
     }
 
     /**
-     * Create a "non managed" connection factory. No appserver involved
+     * Create a "non managed" connection factory.No appserver involved
+     * @throws javax.resource.ResourceException
      */
+    @Override
     public Object createConnectionFactory() throws ResourceException {
         return createConnectionFactory(null);
     }
 
     /**
      * Create a ConnectionFactory with appserver hook
+     * @throws javax.resource.ResourceException
      */
+    @Override
     public Object createConnectionFactory(ConnectionManager cxManager) throws ResourceException {
         Object cf = new JmsConnectionFactoryImpl(this, cxManager);
 
@@ -93,30 +97,39 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Create a new connection to manage in pool
+     * @param info
+     * @throws javax.resource.ResourceException
      */
+    @Override
     public ManagedConnection createManagedConnection(Subject subject, ConnectionRequestInfo info) throws ResourceException {
         boolean trace = log.isTraceEnabled();
 
         info = getInfo(info);
-        if (trace)
+        if (trace) {
             log.trace("connection request info: " + info);
+        }
 
         JmsCred cred = JmsCred.getJmsCred(this, subject, info);
-        if (trace)
+        if (trace) {
             log.trace("jms credentials: " + cred);
+        }
 
         // OK we got autentication stuff
         JmsManagedConnection mc = new JmsManagedConnection(this, info, cred.name, cred.pwd);
 
-        if (trace)
+        if (trace) {
             log.trace("created new managed connection: " + mc);
+        }
 
         return mc;
     }
 
     /**
      * Match a set of connections from the pool
+     * @param info
+     * @throws javax.resource.ResourceException
      */
+    @Override
     public ManagedConnection matchManagedConnections(Set connectionSet, Subject subject, ConnectionRequestInfo info) throws ResourceException {
         boolean trace = log.isTraceEnabled();
 
@@ -153,8 +166,9 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
                     // Now check if ConnectionInfo equals
                     if (info.equals(mc.getInfo())) {
 
-                        if (trace)
+                        if (trace) {
                             log.trace("Found matching connection: " + mc);
+                        }
 
                         return mc;
                     }
@@ -162,15 +176,18 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
             }
         }
 
-        if (trace)
+        if (trace) {
             log.trace("No matching connection was found");
+        }
 
         return null;
     }
 
+    @Override
     public void setLogWriter(PrintWriter out) throws ResourceException {
     }
 
+    @Override
     public PrintWriter getLogWriter() throws ResourceException {
         return null;
     }
@@ -178,16 +195,18 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
     /**
      * Checks for equality ower the configured properties.
      */
+    @Override
     public boolean equals(Object obj) {
-        if (obj == null)
-            return false;
-        if (obj instanceof JmsManagedConnectionFactory) {
-            return mcfProperties.equals(((JmsManagedConnectionFactory) obj).getProperties());
-        } else {
+        if (obj == null) {
             return false;
         }
+        if (obj instanceof JmsManagedConnectionFactory) {
+            return mcfProperties.equals(((JmsManagedConnectionFactory) obj).getProperties());
+        }
+        return false;
     }
 
+    @Override
     public int hashCode() {
         return mcfProperties.hashCode();
     }
@@ -212,6 +231,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Set userName, null by default.
+     * @param userName
      */
     public void setUserName(String userName) {
         mcfProperties.setUserName(userName);
@@ -219,6 +239,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Get userName, may be null.
+     * @return 
      */
     public String getUserName() {
         return mcfProperties.getUserName();
@@ -226,6 +247,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Set password, null by default.
+     * @param password
      */
     public void setPassword(String password) {
         mcfProperties.setPassword(password);
@@ -233,6 +255,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Get password, may be null.
+     * @return 
      */
     public String getPassword() {
         return mcfProperties.getPassword();
@@ -240,6 +263,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Get client id, may be null.
+     * @return 
      */
     public String getClientID() {
         return mcfProperties.getClientID();
@@ -247,6 +271,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     /**
      * Set client id, null by default.
+     * @param clientID
      */
     public void setClientID(final String clientID) {
         mcfProperties.setClientID(clientID);
@@ -257,7 +282,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
     }
 
     public void setStrict(Boolean strict) {
-        this.strict = strict.booleanValue();
+        this.strict = strict;
     }
 
     /**
