@@ -157,12 +157,12 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
     /**
      * Holds all current JmsSession handles.
      */
-    private Set handles = Collections.synchronizedSet(new HashSet());
+    private Set<JmsSession> handles = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * The event listeners
      */
-    private Vector listeners = new Vector();
+    private Vector<ConnectionEventListener> listeners = new Vector<>();
 
     /**
      * Create a <tt>JmsManagedConnection</tt>.
@@ -216,6 +216,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @return A new connection object.
      * @throws ResourceException
      */
+    @Override
     public Object getConnection(final Subject subject, final ConnectionRequestInfo info) throws ResourceException {
         // Check user first
         JmsCred cred = JmsCred.getJmsCred(mcf, subject, info);
@@ -256,9 +257,10 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
             log.trace("Ignored error stopping connection", t);
         }
 
-        Iterator iter = handles.iterator();
-        while (iter.hasNext())
-            ((JmsSession) iter.next()).destroy();
+        Iterator<JmsSession> iter = handles.iterator();
+        while (iter.hasNext()) {
+            iter.next().destroy();
+        }
 
         // clear the handles map
         handles.clear();
@@ -269,7 +271,8 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      *
      * @throws ResourceException Could not property close the session and connection.
      */
-    public void destroy() throws ResourceException {
+    @Override
+    public final void destroy() throws ResourceException {
         if (isDestroyed || con == null) {
             return;
         }
@@ -304,9 +307,12 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
     /**
      * Cleans up, from the spec - The cleanup of ManagedConnection instance resets its client specific state.
+     * Does that mean that authentication should be redone.
      *
-     * Does that mean that authentication should be redone. FIXME
+     * FIXME
+     * @throws javax.resource.ResourceException
      */
+    @Override
     public void cleanup() throws ResourceException {
         if (isDestroyed) {
             throw new IllegalStateException("ManagedConnection already destroyed");
@@ -353,6 +359,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @throws ResourceException     Failed to associate connection.
      * @throws IllegalStateException ManagedConnection in an illegal state.
      */
+    @Override
     public void associateConnection(final Object obj) throws ResourceException {
         //
         // Should we check auth, ie user and pwd? FIXME
@@ -405,6 +412,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      *
      * @param l The connection event listener to be added.
      */
+    @Override
     public void addConnectionEventListener(final ConnectionEventListener l) {
         listeners.addElement(l);
 
@@ -418,6 +426,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      *
      * @param l The connection event listener to be removed.
      */
+    @Override
     public void removeConnectionEventListener(final ConnectionEventListener l) {
         listeners.removeElement(l);
     }
@@ -428,6 +437,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @return The XAResource for the connection.
      * @throws ResourceException XA transaction not supported
      */
+    @Override
     public XAResource getXAResource() throws ResourceException {
         //
         // Spec says a mc must always return the same XA resource,
@@ -455,6 +465,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @return The local transaction for the connection.
      * @throws ResourceException
      */
+    @Override
     public LocalTransaction getLocalTransaction() throws ResourceException {
         LocalTransaction tx = new JmsLocalTransaction(this);
         if (log.isTraceEnabled()) {
@@ -470,6 +481,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @throws ResourceException
      * @throws IllegalStateException ManagedConnection already destroyed.
      */
+    @Override
     public ManagedConnectionMetaData getMetaData() throws ResourceException {
         if (isDestroyed) {
             throw new IllegalStateException("ManagedConnection already destroyd");
@@ -484,6 +496,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @param out The log writer for this connection.
      * @throws ResourceException
      */
+    @Override
     public void setLogWriter(final PrintWriter out) throws ResourceException {
         //
         // jason: screw the logWriter stuff for now it sucks ass
@@ -494,7 +507,9 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * Get the log writer for this connection.
      *
      * @return Always null
+     * @throws javax.resource.ResourceException
      */
+    @Override
     public PrintWriter getLogWriter() throws ResourceException {
         //
         // jason: screw the logWriter stuff for now it sucks ass
@@ -505,6 +520,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
     // --- Exception listener implementation
 
+    @Override
     public void onException(JMSException exception) {
         if (isDestroyed) {
             if (log.isTraceEnabled()) {
@@ -545,6 +561,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
     /**
      * Get the JMSContext for this connection.
+     * @return the JMSContext for this connection.
      */
     protected JMSContext getJMSContext() {
         return context;
@@ -564,7 +581,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
         // convert to an array to avoid concurrent modification exceptions
         ConnectionEventListener[] list =
-                (ConnectionEventListener[]) listeners.toArray(new ConnectionEventListener[listeners.size()]);
+                listeners.toArray(new ConnectionEventListener[listeners.size()]);
 
         for (int i = 0; i < list.length; i++) {
             switch (type) {
@@ -673,25 +690,33 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
             }
 
             if (con instanceof XAConnection && transacted) {
-                if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
-                    xaSession = ((XAQueueConnection) con).createXAQueueSession();
-                    session = ((XAQueueSession)xaSession).getQueueSession();
-                } else if (mcf.getProperties().getType() == JmsConnectionFactory.TOPIC) {
-                    xaSession = ((XATopicConnection) con).createXATopicSession();
-                    session = ((XATopicSession)xaSession).getTopicSession();
-                } else {
-                    xaSession = ((XAConnection) con).createXASession();
-                    session = xaSession.getSession();
+                switch (mcf.getProperties().getType()) {
+                    case JmsConnectionFactory.QUEUE:
+                        xaSession = ((XAQueueConnection) con).createXAQueueSession();
+                        session = ((XAQueueSession)xaSession).getQueueSession();
+                        break;
+                    case JmsConnectionFactory.TOPIC:
+                        xaSession = ((XATopicConnection) con).createXATopicSession();
+                        session = ((XATopicSession)xaSession).getTopicSession();
+                        break;
+                    default:
+                        xaSession = ((XAConnection) con).createXASession();
+                        session = xaSession.getSession();
+                        break;
                 }
 
                 xaTransacted = true;
             } else {
-                if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
-                    session = ((QueueConnection)con).createQueueSession(transacted, ack);
-                } else if (mcf.getProperties().getType() == JmsConnectionFactory.TOPIC) {
-                    session = ((TopicConnection)con).createTopicSession(transacted, ack);
-                } else {
-                    session = con.createSession(transacted, ack);
+                switch (mcf.getProperties().getType()) {
+                    case JmsConnectionFactory.QUEUE:
+                        session = ((QueueConnection)con).createQueueSession(transacted, ack);
+                        break;
+                    case JmsConnectionFactory.TOPIC:
+                        session = ((TopicConnection)con).createTopicSession(transacted, ack);
+                        break;
+                    default:
+                        session = con.createSession(transacted, ack);
+                        break;
                 }
                 if (trace) {
                     log.trace("Using a non-XA Connection.  " +
@@ -701,9 +726,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
             log.debug("xaSession=" + xaSession + ", Session=" + session);
             log.debug("transacted=" + transacted + ", ack=" + ack);
-        } catch (NamingException e) {
-            throw new ResourceException("Unable to setup connection", e);
-        } catch (JMSException e) {
+        } catch (NamingException | JMSException e) {
             throw new ResourceException("Unable to setup connection", e);
         } finally {
             SecurityActions.setThreadContextClassLoader(oldTCCL);
@@ -739,47 +762,62 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
             XAConnectionFactory qFactory = (XAConnectionFactory) factory;
 
             if (username != null) {
-                if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
-                    connection = ((XAQueueConnectionFactory)qFactory).createXAQueueConnection(username, password);
-                } else if (mcf.getProperties().getType() == JmsConnectionFactory.TOPIC) {
-                    connection = ((XATopicConnectionFactory)qFactory).createXATopicConnection(username, password);
-                } else {
-                    connection = qFactory.createXAConnection(username, password);
+                switch (mcf.getProperties().getType()) {
+                    case JmsConnectionFactory.QUEUE:
+                        connection = ((XAQueueConnectionFactory)qFactory).createXAQueueConnection(username, password);
+                        break;
+                    case JmsConnectionFactory.TOPIC:
+                        connection = ((XATopicConnectionFactory)qFactory).createXATopicConnection(username, password);
+                        break;
+                    default:
+                        connection = qFactory.createXAConnection(username, password);
+                        break;
                 }
                 xaContext = qFactory.createXAContext(username, password);
                 context = xaContext.getContext();
             } else {
-                if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
-                    connection = ((XAQueueConnectionFactory)qFactory).createXAQueueConnection();
-                } else if (mcf.getProperties().getType() == JmsConnectionFactory.TOPIC) {
-                    connection = ((XATopicConnectionFactory)qFactory).createXATopicConnection();
-                } else {
-                    connection = qFactory.createXAConnection();
+                switch (mcf.getProperties().getType()) {
+                    case JmsConnectionFactory.QUEUE:
+                        connection = ((XAQueueConnectionFactory)qFactory).createXAQueueConnection();
+                        break;
+                    case JmsConnectionFactory.TOPIC:
+                        connection = ((XATopicConnectionFactory)qFactory).createXATopicConnection();
+                        break;
+                    default:
+                        connection = qFactory.createXAConnection();
+                        break;
                 }
                 xaContext = qFactory.createXAContext();
                 context = xaContext.getContext();
             }
-
             log.debug("created XAConnection: " + connection);
         } else if (factory instanceof ConnectionFactory) {
             ConnectionFactory qFactory = (ConnectionFactory) factory;
             if (username != null) {
-                if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
-                    connection = ((QueueConnectionFactory)qFactory).createQueueConnection(username, password);
-                } else if (mcf.getProperties().getType() == JmsConnectionFactory.TOPIC) {
-                    connection = ((TopicConnectionFactory)qFactory).createTopicConnection(username, password);
-                } else {
-                    connection = qFactory.createConnection(username, password);
+                switch (mcf.getProperties().getType()) {
+                    case JmsConnectionFactory.QUEUE:
+                        connection = ((QueueConnectionFactory)qFactory).createQueueConnection(username, password);
+                        break;
+                    case JmsConnectionFactory.TOPIC:
+                        connection = ((TopicConnectionFactory)qFactory).createTopicConnection(username, password);
+                        break;
+                    default:
+                        connection = qFactory.createConnection(username, password);
+                        break;
                 }
                 context = qFactory.createContext(username, password);
             } else {
-               if (mcf.getProperties().getType() == JmsConnectionFactory.QUEUE) {
-                   connection = ((QueueConnectionFactory)qFactory).createQueueConnection();
-               } else if (mcf.getProperties().getType() == JmsConnectionFactory.TOPIC) {
-                   connection = ((TopicConnectionFactory)qFactory).createTopicConnection();
-               } else {
-                   connection = qFactory.createConnection();
-               }
+                switch (mcf.getProperties().getType()) {
+                    case JmsConnectionFactory.QUEUE:
+                        connection = ((QueueConnectionFactory)qFactory).createQueueConnection();
+                        break;
+                    case JmsConnectionFactory.TOPIC:
+                        connection = ((TopicConnectionFactory)qFactory).createTopicConnection();
+                        break;
+                    default:
+                        connection = qFactory.createConnection();
+                        break;
+                }
                 context = qFactory.createContext();
             }
 
@@ -787,7 +825,6 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
         } else {
             throw new IllegalArgumentException("factory is invalid: " + factory);
         }
-
         return connection;
     }
 }

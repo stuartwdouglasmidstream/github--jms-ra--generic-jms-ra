@@ -5,9 +5,9 @@
     <version>2.0.3.Final-SNAPSHOT</version>
 
     <parent>
-       <groupId>org.jboss</groupId>
-       <artifactId>jboss-parent</artifactId>
-       <version>16</version>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-parent</artifactId>
+        <version>35</version>
     </parent>
 
     <artifactId>generic-jms-ra-pom</artifactId>
@@ -24,8 +24,8 @@
         <connection>scm:git:git@github.com:jms-ra/generic-jms-ra.git</connection>
         <developerConnection>scm:git:git@github.com:jms-ra/generic-jms-ra.git</developerConnection>
         <url>https://github.com/jms-ra/generic-jms-ra</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <distributionManagement>
         <repository>
@@ -54,33 +54,33 @@
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-processor</artifactId>
-                <version>2.1.0.Final</version>
+                <version>2.2.0.Final</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
-                <version>3.3.1.Final</version>
+                <version>3.4.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>jboss-logmanager</artifactId>
-                <version>2.1.0.Alpha4</version>
+                <version>2.1.14.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.jms</groupId>
                 <artifactId>jboss-jms-api_2.0_spec</artifactId>
-                <version>1.0.1.Final</version>
+                <version>1.0.2.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.transaction</groupId>
                 <artifactId>jboss-transaction-api_1.2_spec</artifactId>
-                <version>1.0.1.Final</version>
+                <version>1.1.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.resource</groupId>
                 <artifactId>jboss-connector-api_1.7_spec</artifactId>
-                <version>1.0.0.Final</version>
+                <version>1.0.1.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -89,8 +89,10 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.7</version>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -99,21 +101,4 @@
         <module>generic-jms-ra-jar</module>
         <module>generic-jms-ra-rar</module>
     </modules>
-
-    <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Repository Group</name>
-            <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
 </project>
