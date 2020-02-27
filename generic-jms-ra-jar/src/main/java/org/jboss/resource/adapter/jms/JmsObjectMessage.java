@@ -42,10 +42,12 @@ public class JmsObjectMessage extends JmsMessage implements ObjectMessage {
         super(message, session);
     }
 
+    @Override
     public Serializable getObject() throws JMSException {
         return ((ObjectMessage) message).getObject();
     }
 
+    @Override
     public void setObject(Serializable object) throws JMSException {
         ((ObjectMessage) message).setObject(object);
     }

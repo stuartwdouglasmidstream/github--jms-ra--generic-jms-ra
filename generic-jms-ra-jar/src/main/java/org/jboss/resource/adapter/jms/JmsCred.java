@@ -51,6 +51,11 @@ public class JmsCred {
 
     /**
      * Get our own simple cred
+     * @param mcf
+     * @param subject
+     * @param info
+     * @return
+     * @throws SecurityException 
      */
     public static JmsCred getJmsCred(ManagedConnectionFactory mcf, Subject subject, ConnectionRequestInfo info) throws SecurityException {
         JmsCred jc = new JmsCred();
@@ -73,11 +78,12 @@ public class JmsCred {
         return jc;
     }
 
+    @Override
     public String toString() {
         return super.toString() + "{ username=" + name + ", password=**** }";
     }
 
-    private static class GetCredentialAction implements PrivilegedAction {
+    private static class GetCredentialAction implements PrivilegedAction<PasswordCredential> {
         Subject subject;
         ManagedConnectionFactory mcf;
 
@@ -86,12 +92,13 @@ public class JmsCred {
             this.mcf = mcf;
         }
 
-        public Object run() {
-            Set creds = subject.getPrivateCredentials(PasswordCredential.class);
+        @Override
+        public PasswordCredential run() {
+            Set<PasswordCredential> creds = subject.getPrivateCredentials(PasswordCredential.class);
             PasswordCredential pwdc = null;
-            Iterator credentials = creds.iterator();
+            Iterator<PasswordCredential> credentials = creds.iterator();
             while (credentials.hasNext()) {
-                PasswordCredential curCred = (PasswordCredential) credentials.next();
+                PasswordCredential curCred = credentials.next();
                 if (curCred.getManagedConnectionFactory().equals(mcf)) {
                     pwdc = curCred;
                     break;
@@ -102,8 +109,7 @@ public class JmsCred {
 
         static PasswordCredential getCredential(Subject subject, ManagedConnectionFactory mcf) {
             GetCredentialAction action = new GetCredentialAction(subject, mcf);
-            PasswordCredential pc = (PasswordCredential) AccessController.doPrivileged(action);
-            return pc;
+            return AccessController.doPrivileged(action);
         }
     }
 }

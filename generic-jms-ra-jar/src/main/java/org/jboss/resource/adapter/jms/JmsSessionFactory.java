@@ -22,7 +22,6 @@
 package org.jboss.resource.adapter.jms;
 
 import javax.jms.Connection;
-import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.QueueConnection;
 import javax.jms.TemporaryQueue;

@@ -33,7 +33,6 @@ import javax.resource.spi.ManagedConnection;
 import javax.resource.spi.ManagedConnectionFactory;
 import javax.security.auth.Subject;
 
-//import org.jboss.jms.jndi.JMSProviderAdapter;
 import org.jboss.logging.Logger;
 
 /**
@@ -137,8 +136,9 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
         info = getInfo(info);
         JmsCred cred = JmsCred.getJmsCred(this, subject, info);
 
-        if (trace)
+        if (trace) {
             log.trace("Looking for connection matching credentials: " + cred);
+        }
 
         // Traverse the pooled connections and look for a match, return first
         // found
@@ -171,6 +171,8 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
                         }
 
                         return mc;
+                    } else {
+                        log.trace("Current info " + info + " don't match : " + mc.getInfo());
                     }
                 }
             }

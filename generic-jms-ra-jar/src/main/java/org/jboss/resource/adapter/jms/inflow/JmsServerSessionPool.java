@@ -57,7 +57,7 @@ public class JmsServerSessionPool implements ServerSessionPool {
     /**
      * The server sessions
      */
-    ArrayList serverSessions = new ArrayList();
+    final ArrayList<JmsServerSession> serverSessions = new ArrayList<>();
 
     /**
      * Whether the pool is stopped
@@ -68,7 +68,6 @@ public class JmsServerSessionPool implements ServerSessionPool {
      * The number of sessions
      */
     int sessionCount = 0;
-
 
     /**
      * Create a new session pool
@@ -104,6 +103,7 @@ public class JmsServerSessionPool implements ServerSessionPool {
         teardownSessions();
     }
 
+    @Override
     public ServerSession getServerSession() throws JMSException {
         boolean trace = log.isTraceEnabled();
         if (trace) {
@@ -120,7 +120,7 @@ public class JmsServerSessionPool implements ServerSessionPool {
                     if (stopped) {
                         throw new Exception("Cannot get a server session after the pool is stopped");
                     } else if (sessionsSize > 0) {
-                        result = (ServerSession) serverSessions.remove(sessionsSize - 1);
+                        result = serverSessions.remove(sessionsSize - 1);
                         break;
                     } else {
                         try {
@@ -163,9 +163,10 @@ public class JmsServerSessionPool implements ServerSessionPool {
      *
      * @throws Exception for any error
      */
+    @SuppressWarnings("unchecked")
     protected void setupSessions() throws Exception {
         JmsActivationSpec spec = activation.getActivationSpec();
-        ArrayList clonedSessions = null;
+        ArrayList<JmsServerSession> clonedSessions = null;
 
         // Create the sessions
         synchronized (serverSessions) {
@@ -174,12 +175,12 @@ public class JmsServerSessionPool implements ServerSessionPool {
                 serverSessions.add(session);
             }
             sessionCount = serverSessions.size();
-            clonedSessions = (ArrayList) serverSessions.clone();
+            clonedSessions = (ArrayList<JmsServerSession>) serverSessions.clone();
         }
 
         // Start the sessions
         for (int i = 0; i < clonedSessions.size(); ++i) {
-            JmsServerSession session = (JmsServerSession) clonedSessions.get(i);
+            JmsServerSession session = clonedSessions.get(i);
             session.setup();
         }
     }
@@ -195,7 +196,7 @@ public class JmsServerSessionPool implements ServerSessionPool {
 
             // Stop inactive sessions
             for (int i = 0; i < serverSessions.size(); ++i) {
-                JmsServerSession session = (JmsServerSession) serverSessions.get(i);
+                JmsServerSession session = serverSessions.get(i);
                 session.teardown();
                 --sessionCount;
             }
@@ -207,7 +208,8 @@ public class JmsServerSessionPool implements ServerSessionPool {
                 int forceClearAttempts = activation.getActivationSpec().getForceClearAttempts();
                 long forceClearInterval = activation.getActivationSpec().getForceClearOnShutdownInterval();
 
-                log.trace(this + " force clear behavior in effect. Waiting for " + forceClearInterval + " milliseconds for " + forceClearAttempts + " attempts.");
+                log.trace(this + " force clear behavior in effect. Waiting for " + forceClearInterval
+                        + " milliseconds for " + forceClearAttempts + " attempts.");
 
                 while ((sessionCount > 0) && (attempts < forceClearAttempts)) {
                     try {
@@ -247,7 +249,8 @@ public class JmsServerSessionPool implements ServerSessionPool {
             Topic topic = (Topic) activation.getDestination();
             String subscriptionName = spec.getSubscriptionName();
             if (spec.isDurable()) {
-                consumer = connection.createDurableConnectionConsumer(topic, subscriptionName, selector, this, maxMessages);
+                consumer = connection.createDurableConnectionConsumer(topic, subscriptionName, selector, this,
+                        maxMessages);
             } else {
                 consumer = connection.createConnectionConsumer(topic, selector, this, maxMessages);
             }

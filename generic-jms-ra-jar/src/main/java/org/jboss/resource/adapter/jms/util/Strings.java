@@ -21,17 +21,18 @@
  */
 package org.jboss.resource.adapter.jms.util;
 
-public class Strings
-{
-    public static boolean compare(final String me, final String you)
-    {
+public class Strings {
+
+    public static boolean compare(final String me, final String you) {
         // If both null or intern equals
-        if (me == you)
-           return true;
+        if (me == you) {
+            return true;
+        }
 
         // if me null and you are not
-        if (me == null && you != null)
-           return false;
+        if (me == null && you != null) {
+            return false;
+        }
 
         // me will not be null, test for equality
         return me.equals(you);

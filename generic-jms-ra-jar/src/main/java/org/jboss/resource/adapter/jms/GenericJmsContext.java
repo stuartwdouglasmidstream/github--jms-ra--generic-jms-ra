@@ -38,7 +38,6 @@ import javax.jms.Message;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.QueueBrowser;
-import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;

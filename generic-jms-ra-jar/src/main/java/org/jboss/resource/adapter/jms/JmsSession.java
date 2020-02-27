@@ -64,6 +64,7 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:adrian@jboss.com">Adrian Brock</a>
  */
 public class JmsSession implements Session, QueueSession, TopicSession {
+
     private static final Logger log = Logger.getLogger(JmsSession.class);
 
     /**
@@ -166,7 +167,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     JMSContext getJMSContext() {
         // ensure that the connection is opened
         if (mc == null) {
-            throw new JMSRuntimeException("The session is closed");
+            throw new JMSRuntimeException("The session " + this + " is closed");
         }
 
         JMSContext context = mc.getJMSContext();
@@ -176,9 +177,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         return context;
     }
 
-
     // ---- Session API
-
     @Override
     public BytesMessage createBytesMessage() throws JMSException {
         Session session = getSession();
@@ -251,7 +250,6 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         return session.createTextMessage(string);
     }
 
-
     @Override
     public boolean getTransacted() throws JMSException {
         getSession(); // check closed
@@ -263,6 +261,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
      *
      * @throws IllegalStateException Method not allowed.
      */
+    @Override
     public MessageListener getMessageListener() throws JMSException {
         throw new IllegalStateException("Method not allowed");
     }
@@ -272,6 +271,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
      *
      * @throws IllegalStateException Method not allowed.
      */
+    @Override
     public void setMessageListener(MessageListener listener) throws JMSException {
         throw new IllegalStateException("Method not allowed");
     }
@@ -281,6 +281,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
      *
      * @throws Error Method not allowed.
      */
+    @Override
     public void run() {
         // should this really throw an Error?
         throw new Error("Method not allowed");
@@ -302,38 +303,46 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (info.isTransacted() == false)
+            if (info.isTransacted() == false) {
                 throw new IllegalStateException("Session is not transacted");
-            if (trace)
+            }
+            if (trace) {
                 log.trace("Commit session " + this);
+            }
             session.commit();
         } finally {
             unlock();
         }
     }
 
+    @Override
     public void rollback() throws JMSException {
         lock();
         try {
             Session session = getSession();
-            if (info.isTransacted() == false)
+            if (info.isTransacted() == false) {
                 throw new IllegalStateException("Session is not transacted");
-            if (trace)
+            }
+            if (trace) {
                 log.trace("Rollback session " + this);
+            }
             session.rollback();
         } finally {
             unlock();
         }
     }
 
+    @Override
     public void recover() throws JMSException {
         lock();
         try {
             Session session = getSession();
-            if (info.isTransacted())
+            if (info.isTransacted()) {
                 throw new IllegalStateException("Session is transacted");
-            if (trace)
+            }
+            if (trace) {
                 log.trace("Recover session " + this);
+            }
             session.recover();
         } finally {
             unlock();
@@ -341,31 +350,36 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     }
 
     // --- TopicSession API
-
+    @Override
     public Topic createTopic(String topicName) throws JMSException {
         if (info.getType() == JmsConnectionFactory.QUEUE) {
             throw new IllegalStateException("Cannot create topic for javax.jms.QueueSession");
         }
 
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createTopic " + session + " topicName=" + topicName);
+        }
         Topic result = session.createTopic(topicName);
-        if (trace)
+        if (trace) {
             log.trace("createdTopic " + session + " topic=" + result);
+        }
         return result;
     }
 
+    @Override
     public TopicSubscriber createSubscriber(Topic topic) throws JMSException {
         lock();
         try {
             TopicSession session = getTopicSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSubscriber " + session + " topic=" + topic);
+            }
             TopicSubscriber result = session.createSubscriber(topic);
             result = new JmsTopicSubscriber(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdSubscriber " + session + " JmsTopicSubscriber=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -373,16 +387,19 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public TopicSubscriber createSubscriber(Topic topic, String messageSelector, boolean noLocal) throws JMSException {
         lock();
         try {
             TopicSession session = getTopicSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSubscriber " + session + " topic=" + topic + " selector=" + messageSelector + " noLocal=" + noLocal);
+            }
             TopicSubscriber result = session.createSubscriber(topic, messageSelector, noLocal);
             result = new JmsTopicSubscriber(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdSubscriber " + session + " JmsTopicSubscriber=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -390,6 +407,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public TopicSubscriber createDurableSubscriber(Topic topic, String name) throws JMSException {
         if (info.getType() == JmsConnectionFactory.QUEUE) {
             throw new IllegalStateException("Cannot create durable subscriber from javax.jms.QueueSession");
@@ -398,12 +416,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createDurableSubscriber " + session + " topic=" + topic + " name=" + name);
+            }
             TopicSubscriber result = session.createDurableSubscriber(topic, name);
             result = new JmsTopicSubscriber(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdDurableSubscriber " + session + " JmsTopicSubscriber=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -416,12 +436,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createDurableSubscriber " + session + " topic=" + topic + " name=" + name + " selector=" + messageSelector + " noLocal=" + noLocal);
+            }
             TopicSubscriber result = session.createDurableSubscriber(topic, name, messageSelector, noLocal);
             result = new JmsTopicSubscriber(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdDurableSubscriber " + session + " JmsTopicSubscriber=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -433,12 +455,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             TopicSession session = getTopicSession();
-            if (trace)
+            if (trace) {
                 log.trace("createPublisher " + session + " topic=" + topic);
+            }
             TopicPublisher result = session.createPublisher(topic);
             result = new JmsTopicPublisher(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdPublisher " + session + " publisher=" + result);
+            }
             addProducer(result);
             return result;
         } finally {
@@ -446,6 +470,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public TemporaryTopic createTemporaryTopic() throws JMSException {
         if (info.getType() == JmsConnectionFactory.QUEUE) {
             throw new IllegalStateException("Cannot create temporary topic for javax.jms.QueueSession");
@@ -454,11 +479,13 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createTemporaryTopic " + session);
+            }
             TemporaryTopic temp = session.createTemporaryTopic();
-            if (trace)
+            if (trace) {
                 log.trace("createdTemporaryTopic " + session + " temp=" + temp);
+            }
             sf.addTemporaryTopic(temp);
             return temp;
         } finally {
@@ -466,6 +493,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public void unsubscribe(String name) throws JMSException {
         if (info.getType() == JmsConnectionFactory.QUEUE) {
             throw new IllegalStateException("Cannot unsubscribe for javax.jms.QueueSession");
@@ -474,8 +502,9 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("unsubscribe " + session + " name=" + name);
+            }
             session.unsubscribe(name);
         } finally {
             unlock();
@@ -483,7 +512,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     }
 
     //--- QueueSession API
-
+    @Override
     public QueueBrowser createBrowser(Queue queue) throws JMSException {
 
         if (info.getType() == JmsConnectionFactory.TOPIC) {
@@ -492,21 +521,25 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
 
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createBrowser " + session + " queue=" + queue);
+        }
         QueueBrowser result = session.createBrowser(queue);
-        if (trace)
+        if (trace) {
             log.trace("createdBrowser " + session + " browser=" + result);
+        }
         return result;
     }
 
     public QueueBrowser createBrowser(Queue queue, String messageSelector) throws JMSException {
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createBrowser " + session + " queue=" + queue + " selector=" + messageSelector);
+        }
         QueueBrowser result = session.createBrowser(queue, messageSelector);
-        if (trace)
+        if (trace) {
             log.trace("createdBrowser " + session + " browser=" + result);
+        }
         return result;
     }
 
@@ -517,11 +550,13 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
 
         Session session = getSession();
-        if (trace)
+        if (trace) {
             log.trace("createQueue " + session + " queueName=" + queueName);
+        }
         Queue result = session.createQueue(queueName);
-        if (trace)
+        if (trace) {
             log.trace("createdQueue " + session + " queue=" + result);
+        }
         return result;
     }
 
@@ -530,12 +565,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             QueueSession session = getQueueSession();
-            if (trace)
+            if (trace) {
                 log.trace("createReceiver " + session + " queue=" + queue);
+            }
             QueueReceiver result = session.createReceiver(queue);
             result = new JmsQueueReceiver(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdReceiver " + session + " receiver=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -548,12 +585,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             QueueSession session = getQueueSession();
-            if (trace)
+            if (trace) {
                 log.trace("createReceiver " + session + " queue=" + queue + " selector=" + messageSelector);
+            }
             QueueReceiver result = session.createReceiver(queue, messageSelector);
             result = new JmsQueueReceiver(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdReceiver " + session + " receiver=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -565,12 +604,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             QueueSession session = getQueueSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSender " + session + " queue=" + queue);
+            }
             QueueSender result = session.createSender(queue);
             result = new JmsQueueSender(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdSender " + session + " sender=" + result);
+            }
             addProducer(result);
             return result;
         } finally {
@@ -587,11 +628,13 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createTemporaryQueue " + session);
+            }
             TemporaryQueue temp = session.createTemporaryQueue();
-            if (trace)
+            if (trace) {
                 log.trace("createdTemporaryQueue " + session + " temp=" + temp);
+            }
             sf.addTemporaryQueue(temp);
             return temp;
         } finally {
@@ -600,17 +643,18 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     }
 
     // -- JMS 1.1
-
     public MessageConsumer createConsumer(Destination destination) throws JMSException {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createConsumer " + session + " dest=" + destination);
+            }
             MessageConsumer result = session.createConsumer(destination);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -622,12 +666,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createConsumer " + session + " dest=" + destination + " messageSelector=" + messageSelector);
+            }
             MessageConsumer result = session.createConsumer(destination, messageSelector);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -635,17 +681,20 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public MessageConsumer createConsumer(Destination destination, String messageSelector, boolean noLocal)
             throws JMSException {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createConsumer " + session + " dest=" + destination + " messageSelector=" + messageSelector + " noLocal=" + noLocal);
+            }
             MessageConsumer result = session.createConsumer(destination, messageSelector, noLocal);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -653,16 +702,19 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public MessageProducer createProducer(Destination destination) throws JMSException {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createProducer " + session + " dest=" + destination);
+            }
             MessageProducer result = getSession().createProducer(destination);
             result = new JmsMessageProducer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createdProducer " + session + " producer=" + result);
+            }
             addProducer(result);
             return result;
         } finally {
@@ -676,7 +728,6 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     }
 
     // - JMS 2.0 API
-
     @Override
     public MessageConsumer createSharedConsumer(Topic topic, String sharedSubscriptionName) throws JMSException {
         if (info.getType() == JmsConnectionFactory.QUEUE) {
@@ -685,12 +736,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSharedConsumer " + session + " topic=" + topic + " sharedSubscriptionName=" + sharedSubscriptionName);
+            }
             MessageConsumer result = session.createSharedConsumer(topic, sharedSubscriptionName);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createSharedConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -706,12 +759,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSharedConsumer " + session + " topic=" + topic + " sharedSubscriptionName=" + sharedSubscriptionName + " messageSelector=" + messageSelector);
+            }
             MessageConsumer result = session.createSharedConsumer(topic, sharedSubscriptionName, messageSelector);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createSharedConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -727,12 +782,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createDurableConsumer " + session + " topic=" + topic + " name=" + name);
+            }
             MessageConsumer result = session.createDurableConsumer(topic, name);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createDurableConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -748,12 +805,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createDurableConsumer " + session + " topic=" + topic + " name=" + name + " messageSelector=" + messageSelector + " noLocal=" + noLocal);
+            }
             MessageConsumer result = session.createDurableConsumer(topic, name, messageSelector, noLocal);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createDurableConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -769,12 +828,14 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSharedDurableConsumer " + session + " topic=" + topic + " name=" + name);
+            }
             MessageConsumer result = session.createSharedDurableConsumer(topic, name);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createDurableConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
@@ -790,23 +851,26 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         lock();
         try {
             Session session = getSession();
-            if (trace)
+            if (trace) {
                 log.trace("createSharedDurableConsumer " + session + " topic=" + topic + " name=" + name + " messageSelector=" + messageSelector);
+            }
             MessageConsumer result = session.createSharedDurableConsumer(topic, name, messageSelector);
             result = new JmsMessageConsumer(result, this);
-            if (trace)
+            if (trace) {
                 log.trace("createDurableConsumer " + session + " consumer=" + result);
+            }
             addConsumer(result);
             return result;
         } finally {
             unlock();
-        }    }
+        }
+    }
 
     // --- JmsManagedConnection api
-
     void setManagedConnection(final JmsManagedConnection mc) {
-        if (this.mc != null)
+        if (this.mc != null) {
             this.mc.removeHandle(this);
+        }
         this.mc = mc;
     }
 
@@ -817,23 +881,26 @@ public class JmsSession implements Session, QueueSession, TopicSession {
     }
 
     void start() throws JMSException {
-        if (mc != null)
+        if (mc != null) {
             mc.start();
+        }
     }
 
     void stop() throws JMSException {
-        if (mc != null)
+        if (mc != null) {
             mc.stop();
+        }
     }
 
     void checkStrict() throws JMSException {
-        if (mc != null && mc.getManagedConnectionFactory().isStrict())
+        if (mc != null && mc.getManagedConnectionFactory().isStrict()) {
             throw new IllegalStateException(JmsSessionFactory.ISE);
+        }
     }
 
     void closeSession() throws JMSException {
         if (mc != null) {
-            log.trace("Closing session");
+            log.trace("Closing session " + this);
 
             try {
                 mc.stop();
@@ -842,7 +909,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
             }
 
             synchronized (consumers) {
-                for (Iterator i = consumers.iterator(); i.hasNext(); ) {
+                for (Iterator<MessageConsumer> i = consumers.iterator(); i.hasNext();) {
                     JmsMessageConsumer consumer = (JmsMessageConsumer) i.next();
                     try {
                         consumer.closeConsumer();
@@ -854,7 +921,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
             }
 
             synchronized (producers) {
-                for (Iterator i = producers.iterator(); i.hasNext(); ) {
+                for (Iterator<MessageProducer> i = producers.iterator(); i.hasNext();) {
                     JmsMessageProducer producer = (JmsMessageProducer) i.next();
                     try {
                         producer.closeProducer();
@@ -899,17 +966,26 @@ public class JmsSession implements Session, QueueSession, TopicSession {
 
     QueueSession getQueueSession() throws JMSException {
         Session s = getSession();
-        if (!(s instanceof QueueSession))
+        if (!(s instanceof QueueSession)) {
             throw new InvalidDestinationException("Attempting to use QueueSession methods on: " + this);
+        }
         return (QueueSession) s;
     }
 
     TopicSession getTopicSession() throws JMSException {
         Session s = getSession();
-        if (!(s instanceof TopicSession))
+        if (!(s instanceof TopicSession)) {
             throw new InvalidDestinationException("Attempting to use TopicSession methods on: " + this);
+        }
         return (TopicSession) s;
     }
 
     //
+//    @Override
+//    public String toString() {
+//        return "JmsSession{" + "mc=" + mc + ", lockedMC=" + lockedMC
+//                + ", lockCount=" + lockCount + ", info=" + info + ", sf=" + sf
+//                + ", consumers=" + consumers + ", producers=" + producers
+//                + ", trace=" + trace + '}';
+//    }
 }

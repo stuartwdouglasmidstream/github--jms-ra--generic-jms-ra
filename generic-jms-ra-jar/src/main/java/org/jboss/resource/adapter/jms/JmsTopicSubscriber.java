@@ -41,10 +41,12 @@ public class JmsTopicSubscriber extends JmsMessageConsumer implements TopicSubsc
         super(consumer, session);
     }
 
+    @Override
     public boolean getNoLocal() throws JMSException {
         return ((TopicSubscriber) consumer).getNoLocal();
     }
 
+    @Override
     public Topic getTopic() throws JMSException {
         return ((TopicSubscriber) consumer).getTopic();
     }

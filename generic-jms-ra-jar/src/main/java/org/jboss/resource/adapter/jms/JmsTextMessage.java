@@ -40,10 +40,12 @@ public class JmsTextMessage extends JmsMessage implements TextMessage {
         super(message, session);
     }
 
+    @Override
     public String getText() throws JMSException {
         return ((TextMessage) message).getText();
     }
 
+    @Override
     public void setText(String string) throws JMSException {
         ((TextMessage) message).setText(string);
     }

@@ -56,7 +56,7 @@ public class JmsResourceAdapter implements ResourceAdapter {
     /**
      * The activations by activation spec
      */
-    private ConcurrentHashMap activations = new ConcurrentHashMap();
+    private ConcurrentHashMap<ActivationSpec, JmsActivation> activations = new ConcurrentHashMap<>();
 
     /**
      * Get the work manager
@@ -67,32 +67,37 @@ public class JmsResourceAdapter implements ResourceAdapter {
         return ctx.getWorkManager();
     }
 
+    @Override
     public void endpointActivation(MessageEndpointFactory endpointFactory, ActivationSpec spec) throws ResourceException {
         JmsActivation activation = new JmsActivation(this, endpointFactory, (JmsActivationSpec) spec);
         activations.put(spec, activation);
         activation.start();
     }
 
+    @Override
     public void endpointDeactivation(MessageEndpointFactory endpointFactory, ActivationSpec spec) {
-        JmsActivation activation = (JmsActivation) activations.remove(spec);
+        JmsActivation activation = activations.remove(spec);
         if (activation != null) {
             activation.stop();
         }
     }
 
+    @Override
     public XAResource[] getXAResources(ActivationSpec[] specs) throws ResourceException {
         return null;
     }
 
+    @Override
     public void start(BootstrapContext ctx) throws ResourceAdapterInternalException {
         this.ctx = ctx;
     }
 
+    @Override
     public void stop() {
-        for (Iterator i = activations.entrySet().iterator(); i.hasNext(); ) {
-            Map.Entry entry = (Map.Entry) i.next();
+        for (Iterator<Map.Entry<ActivationSpec, JmsActivation>> i = activations.entrySet().iterator(); i.hasNext(); ) {
+            Map.Entry<ActivationSpec, JmsActivation> entry = i.next();
             try {
-                JmsActivation activation = (JmsActivation) entry.getValue();
+                JmsActivation activation = entry.getValue();
                 if (activation != null) {
                     activation.stop();
                 }
@@ -103,6 +108,7 @@ public class JmsResourceAdapter implements ResourceAdapter {
         }
     }
 
+    @Override
     public int hashCode() {
         int hashCode = 0;
 
@@ -117,6 +123,7 @@ public class JmsResourceAdapter implements ResourceAdapter {
         return hashCode;
     }
 
+    @Override
     public boolean equals(Object other) {
         // TODO
         return false;

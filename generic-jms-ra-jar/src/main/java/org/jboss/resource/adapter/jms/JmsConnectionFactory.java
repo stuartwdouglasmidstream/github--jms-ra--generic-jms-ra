@@ -39,4 +39,5 @@ public interface JmsConnectionFactory extends ConnectionFactory, TopicConnection
    int AGNOSTIC = 0;
    int QUEUE = 1;
    int TOPIC = 2;
+   int JMS_CONTEXT = 3;
 }
