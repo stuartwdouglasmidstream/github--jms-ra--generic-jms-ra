@@ -151,7 +151,8 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
     private JmsConnectionRequestInfo info;
     private String user;
     private String pwd;
-    private boolean isDestroyed;
+    private volatile boolean isSetUp;
+    private volatile boolean isDestroyed;
 
     private ReentrantLock lock = new ReentrantLock(true);
 
@@ -285,32 +286,41 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
         if (isDestroyed || con == null) {
             return;
         }
-
-        isDestroyed = true;
-
-        try {
-            con.setExceptionListener(null);
-        } catch (JMSException e) {
-            log.debug("Error unsetting the exception listener " + this, e);
-        }
-
-        destroyHandles();
-
-        try {
-            // Close session and connection
-            try {
-                if (session != null) {
-                    session.close();
-                }
-                if (xaTransacted && xaSession != null) {
-                    xaSession.close();
-                }
-            } catch (JMSException e) {
-                log.debug("Error closing session " + this, e);
+        synchronized (this) {
+            if (isDestroyed || con == null) {
+                return;
             }
-            con.close();
-        } catch (Throwable e) {
-            throw new ResourceException("Could not properly close the session and connection", e);
+
+            try {
+                con.setExceptionListener(null);
+            } catch (JMSException e) {
+                log.debug("Error unsetting the exception listener " + this, e);
+            }
+
+            destroyHandles();
+
+            try {
+                // Close session and connection
+                try {
+                    if (session != null) {
+                        session.close();
+                    }
+                } catch (JMSException e) {
+                    log.debug("Error closing session " + this, e);
+                }
+                try {
+                    if (xaTransacted && xaSession != null) {
+                        xaSession.close();
+                    }
+                } catch (JMSException e) {
+                    log.debug("Error closing xaSession " + this, e);
+                }
+                con.close();
+            } catch (Throwable e) {
+                throw new ResourceException("Could not properly close the session and connection", e);
+            } finally {
+                isDestroyed = true;
+            }
         }
     }
 
@@ -671,73 +681,78 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @throws ResourceException
      */
     private void setup() throws ResourceException {
-        boolean trace = log.isTraceEnabled();
-        ClassLoader oldTCCL = SecurityActions.getThreadContextClassLoader();
-        try {
-            SecurityActions.setThreadContextClassLoader(JmsManagedConnection.class.getClassLoader());
-
-            Context context = JmsActivation.convertStringToContext(mcf.getJndiParameters());
-            Object factory;
-            boolean transacted = info.isTransacted();
-            int ack = transacted ? 0 : info.getAcknowledgeMode();
-
-            String connectionFactory = mcf.getConnectionFactory();
-            if (connectionFactory == null) {
-                throw new IllegalStateException("No configured 'connectionFactory'.");
-            }
-            factory = context.lookup(connectionFactory);
-            con = createConnection(factory, user, pwd);
-            if (info.getClientID() != null && !info.getClientID().equals(con.getClientID())) {
-                con.setClientID(info.getClientID());
-            }
-            con.setExceptionListener(this);
-            if (trace) {
-                log.trace("created connection: " + con);
+        synchronized (this) {
+            if (isSetUp) {
+                return;
             }
 
-            if (con instanceof XAConnection && transacted) {
-                switch (mcf.getProperties().getType()) {
-                    case JmsConnectionFactory.QUEUE:
-                        xaSession = ((XAQueueConnection) con).createXAQueueSession();
-                        session = ((XAQueueSession)xaSession).getQueueSession();
-                        break;
-                    case JmsConnectionFactory.TOPIC:
-                        xaSession = ((XATopicConnection) con).createXATopicSession();
-                        session = ((XATopicSession)xaSession).getTopicSession();
-                        break;
-                    default:
-                        xaSession = ((XAConnection) con).createXASession();
-                        session = xaSession.getSession();
-                        break;
+            boolean trace = log.isTraceEnabled();
+            ClassLoader oldTCCL = SecurityActions.getThreadContextClassLoader();
+            try {
+                SecurityActions.setThreadContextClassLoader(JmsManagedConnection.class.getClassLoader());
+
+                Context context = JmsActivation.convertStringToContext(mcf.getJndiParameters());
+                Object factory;
+                boolean transacted = info.isTransacted();
+                int ack = transacted ? 0 : info.getAcknowledgeMode();
+
+                String connectionFactory = mcf.getConnectionFactory();
+                if (connectionFactory == null) {
+                    throw new IllegalStateException("No configured 'connectionFactory'.");
+                }
+                factory = context.lookup(connectionFactory);
+                con = createConnection(factory, user, pwd);
+                if (info.getClientID() != null && !info.getClientID().equals(con.getClientID())) {
+                    con.setClientID(info.getClientID());
                 }
 
-                xaTransacted = true;
-            } else {
-                switch (mcf.getProperties().getType()) {
-                    case JmsConnectionFactory.QUEUE:
-                        session = ((QueueConnection)con).createQueueSession(transacted, ack);
-                        break;
-                    case JmsConnectionFactory.TOPIC:
-                        session = ((TopicConnection)con).createTopicSession(transacted, ack);
-                        break;
-                    default:
-                        session = con.createSession(transacted, ack);
-                        break;
+                if (con instanceof XAConnection && transacted) {
+                    switch (mcf.getProperties().getType()) {
+                        case JmsConnectionFactory.QUEUE:
+                            xaSession = ((XAQueueConnection) con).createXAQueueSession();
+                            session = ((XAQueueSession) xaSession).getQueueSession();
+                            break;
+                        case JmsConnectionFactory.TOPIC:
+                            xaSession = ((XATopicConnection) con).createXATopicSession();
+                            session = ((XATopicSession) xaSession).getTopicSession();
+                            break;
+                        default:
+                            xaSession = ((XAConnection) con).createXASession();
+                            session = xaSession.getSession();
+                            break;
+                    }
+                    xaTransacted = true;
+                } else {
+                    switch (mcf.getProperties().getType()) {
+                        case JmsConnectionFactory.QUEUE:
+                            session = ((QueueConnection) con).createQueueSession(transacted, ack);
+                            break;
+                        case JmsConnectionFactory.TOPIC:
+                            session = ((TopicConnection) con).createTopicSession(transacted, ack);
+                            break;
+                        default:
+                            session = con.createSession(transacted, ack);
+                            break;
+                    }
+                    if (trace) {
+                        log.trace("Using a non-XA Connection.  "
+                                     + "It will not be able to participate in a Global UOW");
+                    }
                 }
+                con.setExceptionListener(this);
                 if (trace) {
-                    log.trace("Using a non-XA Connection.  " +
-                            "It will not be able to participate in a Global UOW");
+                    log.trace("created connection: " + con);
                 }
+
+                log.debug("xaSession=" + xaSession + ", Session=" + session);
+                log.debug("transacted=" + transacted + ", ack=" + ack);
+                isSetUp = true;
+            } catch (NamingException | JMSException e) {
+                throw new ResourceException("Unable to setup connection", e);
+            } finally {
+                SecurityActions.setThreadContextClassLoader(oldTCCL);
             }
-
-            log.debug("xaSession=" + xaSession + ", Session=" + session);
-            log.debug("transacted=" + transacted + ", ack=" + ack);
-        } catch (NamingException | JMSException e) {
-            throw new ResourceException("Unable to setup connection", e);
-        } finally {
-            SecurityActions.setThreadContextClassLoader(oldTCCL);
         }
-
     }
 
     /**
@@ -754,7 +769,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
      * @throws IllegalArgumentException Factory is null or invalid.
      */
     public Connection createConnection(final Object factory, final String username, final String password)
-            throws JMSException {
+       throws JMSException {
         if (factory == null) {
             throw new IllegalArgumentException("factory is null");
         }
@@ -841,6 +856,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
            + ", info=" + info
            + ", user=" + user
            + ", pwd=" + pwd
+           + ", isSetUp=" + isSetUp
            + ", isDestroyed=" + isDestroyed
            + ", lock=" + lock
            + ", con=" + con
