@@ -66,6 +66,11 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
      */
     private Boolean deleteTemporaryDestinations = true;
 
+    /**
+     * Whether we are supporting JMS 2.0 in agnostic mode.
+     */
+    private Boolean jms_2_0 = true;
+
     public JmsManagedConnectionFactory() {
         // empty
     }
@@ -285,6 +290,14 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
 
     public void setStrict(Boolean strict) {
         this.strict = strict;
+    }
+
+    public Boolean isJMS20() {
+        return jms_2_0;
+    }
+
+    public void setJMS20(Boolean jms_2_0) {
+        this.jms_2_0 = jms_2_0;
     }
 
     /**

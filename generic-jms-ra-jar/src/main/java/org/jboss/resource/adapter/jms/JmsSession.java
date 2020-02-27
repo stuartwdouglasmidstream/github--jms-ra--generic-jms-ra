@@ -722,6 +722,7 @@ public class JmsSession implements Session, QueueSession, TopicSession {
         }
     }
 
+    @Override
     public int getAcknowledgeMode() throws JMSException {
         getSession(); // check closed
         return info.getAcknowledgeMode();
