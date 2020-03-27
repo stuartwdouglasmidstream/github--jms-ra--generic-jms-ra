@@ -34,7 +34,6 @@ import javax.resource.spi.InvalidPropertyException;
 import javax.resource.spi.ResourceAdapter;
 
 import org.jboss.logging.Logger;
-//import org.jboss.util.Strings;
 
 /**
  * A generic jms ActivationSpec.
@@ -164,11 +163,11 @@ public class JmsActivationSpec implements ActivationSpec {
     public String getAcknowledgeMode() {
         if (Session.DUPS_OK_ACKNOWLEDGE == acknowledgeMode) {
             return "Dups-ok-acknowledge";
-        } else if (Session.AUTO_ACKNOWLEDGE == acknowledgeMode) {
-            return "Auto-acknowledge";
-        } else {
-            return "unknown";
         }
+        if (Session.AUTO_ACKNOWLEDGE == acknowledgeMode) {
+            return "Auto-acknowledge";
+        }
+        return "unknown";
     }
 
     /**
@@ -436,28 +435,32 @@ public class JmsActivationSpec implements ActivationSpec {
         return maxSession;
     }
 
+    @Override
     public ResourceAdapter getResourceAdapter() {
         return ra;
     }
 
+    @Override
     public void setResourceAdapter(ResourceAdapter ra) throws ResourceException {
         this.ra = ra;
     }
 
+    @Override
     public void validate() throws InvalidPropertyException {
         if (log.isTraceEnabled()) {
             log.trace("validate " + this);
         }
 
-        if (destination == null || destination.trim().equals("")) {
+        if (destination == null || "".equals(destination.trim())) {
             throw new InvalidPropertyException("destination is mandatory");
         }
 
-        if (connectionFactory == null || connectionFactory.trim().equals("")) {
+        if (connectionFactory == null || "".equals(connectionFactory.trim())) {
             throw new InvalidPropertyException("connectionFactory is mandatory");
         }
     }
 
+    @Override
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append(JmsActivation.defaultToString(this)).append('(');

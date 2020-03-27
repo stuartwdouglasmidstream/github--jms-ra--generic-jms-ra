@@ -51,31 +51,38 @@ public class JmsQueueSender extends JmsMessageProducer implements QueueSender {
         super(producer, session);
     }
 
+    @Override
     public Queue getQueue() throws JMSException {
         return ((QueueSender) producer).getQueue();
     }
 
+    @Override
     public void send(Queue destination, Message message, int deliveryMode, int priority, long timeToLive) throws JMSException {
         session.lock();
         try {
-            if (trace)
+            if (trace) {
                 log.trace("send " + this + " destination=" + destination + " message=" + message + " deliveryMode=" + deliveryMode + " priority=" + priority + " ttl=" + timeToLive);
+            }
             producer.send(destination, message, deliveryMode, priority, timeToLive);
-            if (trace)
+            if (trace) {
                 log.trace("sent " + this + " result=" + message);
+            }
         } finally {
             session.unlock();
         }
     }
 
+    @Override
     public void send(Queue destination, Message message) throws JMSException {
         session.lock();
         try {
-            if (trace)
+            if (trace) {
                 log.trace("send " + this + " destination=" + destination + " message=" + message);
+            }
             producer.send(destination, message);
-            if (trace)
+            if (trace) {
                 log.trace("sent " + this + " result=" + message);
+            }
         } finally {
             session.unlock();
         }

@@ -21,6 +21,8 @@
  */
 package org.jboss.resource.adapter.jms;
 
+import javax.jms.Destination;
+import javax.jms.JMSContext;
 import javax.jms.Queue;
 import javax.jms.Topic;
 import javax.resource.ResourceException;
@@ -38,6 +40,8 @@ public class JmsMCFProperties implements java.io.Serializable {
 
     public static final String QUEUE_TYPE = Queue.class.getName();
     public static final String TOPIC_TYPE = Topic.class.getName();
+    public static final String AGNOSTIC_TYPE = Destination.class.getName();
+    public static final String JMS_CONTEXT_TYPE = JMSContext.class.getName();
 
     String userName;
     String password;
@@ -129,21 +133,28 @@ public class JmsMCFProperties implements java.io.Serializable {
      * @throws ResourceException if type was not a valid type.
      */
     public void setSessionDefaultType(String type) throws ResourceException {
-        if (type.equals(QUEUE_TYPE))
+        if (QUEUE_TYPE.equals(type)) {
             this.type = JmsConnectionFactory.QUEUE;
-        else if (type.equals(TOPIC_TYPE))
+        } else if (TOPIC_TYPE.equals(type)) {
             this.type = JmsConnectionFactory.TOPIC;
-        else
+        } else if (JMS_CONTEXT_TYPE.equals(type)) {
+            this.type = JmsConnectionFactory.JMS_CONTEXT;
+        } else {
             this.type = JmsConnectionFactory.AGNOSTIC;
+        }
     }
 
     public String getSessionDefaultType() {
-        if (type == JmsConnectionFactory.AGNOSTIC)
-            return "agnostic";
-        else if (type == JmsConnectionFactory.QUEUE)
-            return QUEUE_TYPE;
-        else
-            return TOPIC_TYPE;
+        switch (type) {
+            case JmsConnectionFactory.QUEUE:
+                return QUEUE_TYPE;
+            case JmsConnectionFactory.TOPIC:
+                return TOPIC_TYPE;
+            case JmsConnectionFactory.JMS_CONTEXT:
+                return JMS_CONTEXT_TYPE;
+            default:
+                return AGNOSTIC_TYPE;
+        }
     }
 
     /**

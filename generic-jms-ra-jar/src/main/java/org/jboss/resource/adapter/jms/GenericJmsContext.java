@@ -38,7 +38,6 @@ import javax.jms.Message;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.QueueBrowser;
-import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
@@ -119,6 +118,7 @@ public class GenericJmsContext implements JMSContext {
     public void close() {
         // #17 - close the session factory to return the managed connection to the pool
         try {
+            session.close();
             sessionFactory.close();
         } catch (JMSException e) {
             e.printStackTrace();

@@ -148,6 +148,7 @@ public class JmsServerSession implements ServerSession, MessageListener, Work, W
         }
     }
 
+    @Override
     public void onMessage(Message message) {
         try {
             final int timeout = pool.getActivation().getActivationSpec().getTransactionTimeout();
@@ -174,10 +175,12 @@ public class JmsServerSession implements ServerSession, MessageListener, Work, W
         }
     }
 
+    @Override
     public Session getSession() throws JMSException {
         return session;
     }
 
+    @Override
     public void start() throws JMSException {
         JmsActivation activation = pool.getActivation();
         WorkManager workManager = activation.getWorkManager();
@@ -189,24 +192,30 @@ public class JmsServerSession implements ServerSession, MessageListener, Work, W
         }
     }
 
+    @Override
     public void run() {
         session.run();
     }
 
+    @Override
     public void release() {
     }
 
+    @Override
     public void workAccepted(WorkEvent e) {
     }
 
+    @Override
     public void workCompleted(WorkEvent e) {
         pool.returnServerSession(this);
     }
 
+    @Override
     public void workRejected(WorkEvent e) {
         pool.returnServerSession(this);
     }
 
+    @Override
     public void workStarted(WorkEvent e) {
     }
 }

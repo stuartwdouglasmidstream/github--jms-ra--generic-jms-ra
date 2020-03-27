@@ -256,7 +256,7 @@ public class JmsActivation implements ExceptionListener {
                 log.info("Attempting to reconnect " + spec);
                 try {
                     setupActivation();
-                    log.info("Reconnected with messaging provider.");
+                    log.info("Reconnected with messaging provider");
                     break;
                 } catch (Throwable t) {
                     log.error("Unable to reconnect " + spec, t);
@@ -269,12 +269,14 @@ public class JmsActivation implements ExceptionListener {
         }
     }
 
+    @Override
     public void onException(JMSException exception) {
         handleFailure(exception);
     }
 
+    @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append(defaultToString(this)).append('(');
         buffer.append("spec=").append(defaultToString(spec));
         buffer.append(" endpointFactory=").append(defaultToString(endpointFactory));
@@ -558,9 +560,9 @@ public class JmsActivation implements ExceptionListener {
         }
     }
 
-    private static Object lookup(Context context, String name, Class clazz) throws Exception {
+    private static Object lookup(Context context, String name, Class<?> clazz) throws Exception {
         Object result = context.lookup(name);
-        Class objectClass = result.getClass();
+        Class<?> objectClass = result.getClass();
         if (clazz.isAssignableFrom(objectClass) == false) {
             StringBuffer buffer = new StringBuffer(100);
             buffer.append("Object at '").append(name);
@@ -580,11 +582,11 @@ public class JmsActivation implements ExceptionListener {
      * @param buffer the buffer to append to
      * @param clazz  the class to describe
      */
-    private static void appendClassInfo(StringBuffer buffer, Class clazz) {
+    private static void appendClassInfo(StringBuffer buffer, Class<?> clazz) {
         buffer.append("[class=").append(clazz.getName());
         buffer.append(" classloader=").append(clazz.getClassLoader());
         buffer.append(" interfaces={");
-        Class[] interfaces = clazz.getInterfaces();
+        Class<?>[] interfaces = clazz.getInterfaces();
         for (int i = 0; i < interfaces.length; ++i) {
             if (i > 0) {
                 buffer.append(", ");

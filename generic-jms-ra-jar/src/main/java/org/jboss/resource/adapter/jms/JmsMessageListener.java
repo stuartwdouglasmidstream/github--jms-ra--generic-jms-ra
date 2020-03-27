@@ -51,8 +51,8 @@ public class JmsMessageListener implements MessageListener {
         this.consumer = consumer;
     }
 
+    @Override
     public void onMessage(Message message) {
-        message = consumer.wrapMessage(message);
-        listener.onMessage(message);
+        listener.onMessage(consumer.wrapMessage(message));
     }
 }

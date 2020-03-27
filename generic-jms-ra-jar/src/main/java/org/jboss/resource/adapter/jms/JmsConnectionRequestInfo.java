@@ -39,11 +39,12 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
     private String clientID;
 
     private boolean transacted = true;
-    private int acknowledgeMode = Session.AUTO_ACKNOWLEDGE;
+    private int acknowledgeMode = Session.SESSION_TRANSACTED;
     private int type = JmsConnectionFactory.AGNOSTIC;
 
     /**
      * Creats with the MCF configured properties.
+     * @param prop
      */
     public JmsConnectionRequestInfo(JmsMCFProperties prop) {
         this.userName = prop.getUserName();
@@ -65,12 +66,15 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
      * Fill in default values if missing. Only applies to user and password.
      */
     public void setDefaults(JmsMCFProperties prop) {
-        if (userName == null)
+        if (userName == null) {
             userName = prop.getUserName();//May be null there to
-        if (password == null)
+        }
+        if (password == null) {
             password = prop.getPassword();//May be null there to
-        if (clientID == null)
+        }
+        if (clientID == null) {
             clientID = prop.getClientID();//May be null there to
+        }
     }
 
     public String getUserName() {
@@ -109,8 +113,11 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
         return type;
     }
 
+    @Override
     public boolean equals(Object obj) {
-        if (obj == null) return false;
+        if (obj == null) {
+            return false;
+        }
         if (obj instanceof JmsConnectionRequestInfo) {
             JmsConnectionRequestInfo you = (JmsConnectionRequestInfo) obj;
             return (this.transacted == you.isTransacted() &&
@@ -119,30 +126,43 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
                     Strings.compare(userName, you.getUserName()) &&
                     Strings.compare(password, you.getPassword()) &&
                     Strings.compare(clientID, you.getClientID()));
-        } else {
-            return false;
         }
+        return false;
     }
 
+    @Override
     public int hashCode() {
         int hashCode = 0;
-        if (transacted)
+        if (transacted) {
             hashCode += 1;
-        if (type == JmsConnectionFactory.QUEUE)
+        }
+        if (type == JmsConnectionFactory.QUEUE) {
             hashCode += 3;
-        else if (type == JmsConnectionFactory.TOPIC)
+        } else if (type == JmsConnectionFactory.TOPIC) {
             hashCode += 5;
-        if (acknowledgeMode == Session.AUTO_ACKNOWLEDGE)
+        }
+        if (acknowledgeMode == Session.AUTO_ACKNOWLEDGE) {
             hashCode += 7;
-        else if (acknowledgeMode == Session.DUPS_OK_ACKNOWLEDGE)
+        } else if (acknowledgeMode == Session.DUPS_OK_ACKNOWLEDGE) {
             hashCode += 11;
-        if (userName != null)
+        }
+        if (userName != null) {
             hashCode += userName.hashCode();
-        if (password != null)
+        }
+        if (password != null) {
             hashCode += password.hashCode();
-        if (clientID != null)
+        }
+        if (clientID != null) {
             hashCode += clientID.hashCode();
-
+        }
         return hashCode;
+    }
+
+    @Override
+    public String toString() {
+        return "JmsConnectionRequestInfo{" + "userName=" + userName
+                + ", password=" + password + ", clientID=" + clientID
+                + ", transacted=" + transacted
+                + ", acknowledgeMode=" + acknowledgeMode + ", type=" + type + '}';
     }
 }
