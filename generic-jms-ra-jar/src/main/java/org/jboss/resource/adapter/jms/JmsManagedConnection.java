@@ -808,7 +808,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                     case JmsConnectionFactory.AGNOSTIC: {
                         Connection realConnection = xaConnFactory.createXAConnection(username, password);
                         if (isJMS_2_0(xaConnFactory)) {
-                            xaContext = xaConnFactory.createXAContext();
+                            xaContext = xaConnFactory.createXAContext(username, password);
                             context = xaContext.getContext();
                         } else {
                             context = null;
@@ -888,7 +888,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                     case JmsConnectionFactory.AGNOSTIC: {
                         Connection realConnection = nonXAConnFactory.createConnection(username, password);
                         if(isJMS_2_0(nonXAConnFactory)) {
-                            context = nonXAConnFactory.createContext();
+                            context = nonXAConnFactory.createContext(username, password);
                         } else {
                             context = null;
                         }
