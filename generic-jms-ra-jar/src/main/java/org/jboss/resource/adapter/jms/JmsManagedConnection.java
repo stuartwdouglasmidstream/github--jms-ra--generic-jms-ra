@@ -709,9 +709,6 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                 }
                 factory = jndiContext.lookup(connectionFactory);
                 con = createConnection(factory, user, pwd, transacted, ack);
-                if (info.getClientID() != null && !info.getClientID().equals(con.getClientID())) {
-                    con.setClientID(info.getClientID());
-                }
 
                 if (con instanceof XAConnection && transacted) {
                     switch (mcf.getProperties().getType()) {
@@ -820,6 +817,10 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                     case JmsConnectionFactory.JMS_CONTEXT:
                         try {
                             xaContext = xaConnFactory.createXAContext(username, password);
+                            // Attempt to set the client id
+                            if (info.getClientID() != null && !info.getClientID().equals(xaContext.getClientID())) {
+                                xaContext.setClientID(info.getClientID());
+                            }
                             context = xaContext.getContext();
                             connection = new JmsConnectionContext(context);
                         } catch (Exception e) {
@@ -858,6 +859,10 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                     case JmsConnectionFactory.JMS_CONTEXT:
                         try {
                             xaContext = xaConnFactory.createXAContext();
+                            // Attempt to set the client id
+                            if (info.getClientID() != null && !info.getClientID().equals(xaContext.getClientID())) {
+                                xaContext.setClientID(info.getClientID());
+                            }
                             context = xaContext.getContext();
                             connection = new JmsConnectionContext(context);
                         } catch (Exception e) {
@@ -898,6 +903,10 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                     case JmsConnectionFactory.JMS_CONTEXT:
                         try {
                             context = nonXAConnFactory.createContext(username, password);
+                            // Attempt to set the client id
+                            if (info.getClientID() != null && !info.getClientID().equals(context.getClientID())) {
+                                context.setClientID(info.getClientID());
+                            }
                             connection = new JmsConnectionContext(context);
                         } catch (Exception e) {
                             log.fatal(
@@ -934,6 +943,10 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
                     case JmsConnectionFactory.JMS_CONTEXT:
                         try {
                             context = nonXAConnFactory.createContext();
+                            // Attempt to set the client id
+                            if (info.getClientID() != null && !info.getClientID().equals(context.getClientID())) {
+                                context.setClientID(info.getClientID());
+                            }
                             connection = new JmsConnectionContext(context);
                         } catch (Exception e) {
                             log.fatal(
@@ -963,6 +976,12 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
 
     private Session createSession(Connection connection, boolean xaTransacted, int ack) throws JMSException {
         Session internalSession;
+
+        // Attempt to set the client id prior to creating a session. The QPID JMS client doesn't allow it after a session is created
+        if (info.getClientID() != null && !info.getClientID().equals(connection.getClientID())) {
+            connection.setClientID(info.getClientID());
+        }
+
         if (isJMS_2_0(connection)) {
             internalSession = connection.createSession();
             log.debug("Session " + internalSession + " created with createSession()");
