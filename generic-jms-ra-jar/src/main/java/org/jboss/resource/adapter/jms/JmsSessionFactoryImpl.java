@@ -453,6 +453,7 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
             log.error("could not create session", e);
 
             JMSException je = new JMSException("Could not create a session: " + e);
+            je.initCause(e);
             je.setLinkedException(e);
             throw je;
         }

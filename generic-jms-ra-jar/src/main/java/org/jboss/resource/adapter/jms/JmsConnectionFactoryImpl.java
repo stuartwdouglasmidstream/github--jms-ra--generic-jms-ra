@@ -245,9 +245,11 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
             }
             JMSException jmse = findRootJMSException(e);
             if (jmse instanceof JMSSecurityException) {
-                throw new JMSSecurityRuntimeException(jmse.getMessage());
+                JMSSecurityRuntimeException rte = new JMSSecurityRuntimeException(jmse.getMessage(), jmse.getErrorCode(), jmse);
+                throw rte;
             } else {
-                throw new JMSRuntimeException(e.getMessage());
+                JMSRuntimeException rte = new JMSRuntimeException(e.getMessage(), e.getErrorCode(), e);
+                throw rte;
             }
         }
     }
