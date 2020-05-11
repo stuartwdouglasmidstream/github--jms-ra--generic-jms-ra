@@ -340,10 +340,10 @@ public class JmsActivation implements ExceptionListener {
         if (jndiParameters != null) {
             String[] elements = jndiParameters.split(";");
             for (String element : elements) {
-                String[] nameValue = element.split("=");
-                if (nameValue.length == 2) {
-                    properties.setProperty(nameValue[0], nameValue[1]);
-                }
+                int index = element.indexOf('=');
+                String name = element.substring(0, index);
+                String value = element.substring(index + 1);
+                properties.setProperty(name, value);
             }
         }
         return properties;
