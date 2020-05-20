@@ -23,6 +23,10 @@
 package org.jboss.resource.adapter.jms;
 
 import java.io.Serializable;
+import java.security.PrivilegedActionException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.jms.BytesMessage;
 import javax.jms.ConnectionMetaData;
@@ -43,16 +47,21 @@ import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+import org.jboss.logging.Logger;
+import org.jboss.resource.adapter.jms.util.JMSProducerUtils;
+import org.jboss.resource.adapter.jms.util.TibcojmsUtils;
 
 /**
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2016 Red Hat inc.
  */
 public class GenericJmsContext implements JMSContext {
 
+    private static final Logger log = Logger.getLogger(GenericJmsContext.class);
     private static final String ILLEGAL_METHOD = "This method is not applicable inside the application server. See the JEE spec, e.g. JEE 7 Section 6.7";
 
     private final JmsSessionFactory sessionFactory;
     private final JmsSession session;
+    private final Set<JMSProducer> producers = Collections.synchronizedSet(new HashSet<JMSProducer>());
 
     GenericJmsContext(JmsSessionFactory sessionFactory, JmsSession session) {
         this.sessionFactory = sessionFactory;
@@ -66,7 +75,9 @@ public class GenericJmsContext implements JMSContext {
 
     @Override
     public JMSProducer createProducer() {
-        return session.getJMSContext().createProducer();
+        JMSProducer producer = session.getJMSContext().createProducer();
+        producers.add(producer);
+        return producer;
     }
 
     @Override
@@ -118,10 +129,22 @@ public class GenericJmsContext implements JMSContext {
     public void close() {
         // #17 - close the session factory to return the managed connection to the pool
         try {
+            synchronized (producers) {
+                for (JMSProducer producer : producers) {
+                    if (producer != null) {
+                        try {
+                            JMSProducerUtils.close(producer);
+                        } catch (PrivilegedActionException ex) {
+                            throw (JMSException) ex.getException();
+                        }
+                    }
+                }
+                producers.clear();
+            }
             session.close();
             sessionFactory.close();
         } catch (JMSException e) {
-            e.printStackTrace();
+            log.debugf(e, "Error closing the JMSContext");
         }
     }
 

@@ -19,7 +19,6 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-
 package org.jboss.resource.adapter.jms;
 
 import java.security.AccessController;
@@ -31,6 +30,7 @@ import java.security.PrivilegedAction;
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2014 Red Hat inc.
  */
 public class SecurityActions {
+
 
     public static ClassLoader getThreadContextClassLoader() {
         if (System.getSecurityManager() == null) {
@@ -55,6 +55,7 @@ public class SecurityActions {
             Thread.currentThread().setContextClassLoader(cl);
         } else {
             AccessController.doPrivileged(new PrivilegedAction<Object>() {
+                @Override
                 public Object run() {
                     Thread.currentThread().setContextClassLoader(cl);
 
@@ -75,10 +76,10 @@ public class SecurityActions {
             return clazz.getClassLoader();
         }
         return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            @Override
             public ClassLoader run() {
                 return clazz.getClassLoader();
             }
         });
     }
-
 }

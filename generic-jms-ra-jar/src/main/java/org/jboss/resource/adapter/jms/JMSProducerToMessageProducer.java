@@ -15,7 +15,7 @@
  */
 package org.jboss.resource.adapter.jms;
 
-import java.lang.reflect.Method;
+import java.security.PrivilegedActionException;
 import javax.jms.CompletionListener;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -23,9 +23,11 @@ import javax.jms.JMSProducer;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
+import org.jboss.resource.adapter.jms.util.JMSProducerUtils;
 
 /**
  * Mapper class for JMSProducer and JMSConsumer to the JMS 1.1 equivalent.
+ *
  * @author Emmanuel Hugonnet (c) 2017 Red Hat, inc.
  */
 public class JMSProducerToMessageProducer implements MessageProducer {
@@ -195,14 +197,9 @@ public class JMSProducerToMessageProducer implements MessageProducer {
         //For Tibco
         if (jmsProducer != null) {
             try {
-                Method close = jmsProducer.getClass().getMethod("close");
-                try {
-                    close.invoke(close);
-                } catch (Exception ex) {
-                    throw new JMSException(ex.getMessage());
-                }
-            } catch (NoSuchMethodException ex) {
-                //do nothing
+                JMSProducerUtils.close(jmsProducer);
+            } catch (PrivilegedActionException ex) {
+                throw (JMSException) ex.getException();
             }
         }
         jmsProducer = null;
@@ -294,5 +291,5 @@ public class JMSProducerToMessageProducer implements MessageProducer {
     public void send(Destination destination, Message message, int deliveryMode, int priority, long timeToLive, CompletionListener completionListener) throws JMSException {
         throw new JMSException("JMSProducer does not support CompletionListener");
     }
-    
+
 }
