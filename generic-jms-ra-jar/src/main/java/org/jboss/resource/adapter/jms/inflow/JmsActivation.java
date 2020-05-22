@@ -23,7 +23,7 @@ package org.jboss.resource.adapter.jms.inflow;
 
 import org.jboss.logging.Logger;
 import org.jboss.resource.adapter.jms.JmsResourceAdapter;
-import org.jboss.resource.adapter.jms.SecurityActions;
+import org.jboss.resource.adapter.jms.util.SecurityActions;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
