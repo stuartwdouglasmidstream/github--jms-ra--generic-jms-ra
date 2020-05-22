@@ -21,6 +21,7 @@
  */
 package org.jboss.resource.adapter.jms;
 
+import org.jboss.resource.adapter.jms.util.SecurityActions;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
