@@ -1011,7 +1011,7 @@ public class JmsManagedConnection implements ManagedConnection, ExceptionListene
            + "mcf=" + mcf
            + ", info=" + info
            + ", user=" + user
-           + ", pwd=" + pwd
+           + ", pwd=****"
            + ", isSetUp=" + isSetUp
            + ", isDestroyed=" + isDestroyed
            + ", lock=" + lock

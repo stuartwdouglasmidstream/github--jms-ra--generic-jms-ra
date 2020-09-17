@@ -462,7 +462,7 @@ public class JmsActivationSpec implements ActivationSpec {
 
     @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append(JmsActivation.defaultToString(this)).append('(');
         buffer.append("ra=").append(ra);
         buffer.append(" destination=").append(destination);

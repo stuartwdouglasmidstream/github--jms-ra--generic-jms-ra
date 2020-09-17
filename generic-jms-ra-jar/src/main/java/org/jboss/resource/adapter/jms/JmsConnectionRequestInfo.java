@@ -161,7 +161,7 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
     @Override
     public String toString() {
         return "JmsConnectionRequestInfo{" + "userName=" + userName
-                + ", password=" + password + ", clientID=" + clientID
+                + ", password****, clientID=" + clientID
                 + ", transacted=" + transacted
                 + ", acknowledgeMode=" + acknowledgeMode + ", type=" + type + '}';
     }
