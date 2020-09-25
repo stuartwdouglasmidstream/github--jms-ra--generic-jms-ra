@@ -72,7 +72,7 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
 
     // Used from JmsConnectionFactory
     private String userName;
-    private String password;
+    private char[] password;
     private String clientID;
     private int type;
 
@@ -139,7 +139,7 @@ public class JmsSessionFactoryImpl implements JmsSessionFactory, Referenceable {
         userName = name;
     }
 
-    public void setPassword(final String password) {
+    public void setPassword(final char[] password) {
         this.password = password;
     }
 

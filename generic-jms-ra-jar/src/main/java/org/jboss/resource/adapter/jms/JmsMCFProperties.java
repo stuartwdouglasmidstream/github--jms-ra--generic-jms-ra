@@ -44,7 +44,7 @@ public class JmsMCFProperties implements java.io.Serializable {
     public static final String JMS_CONTEXT_TYPE = JMSContext.class.getName();
 
     String userName;
-    String password;
+    char[] password;
     String clientID;
     String jndiParameters;
     String connectionFactory;
@@ -70,15 +70,16 @@ public class JmsMCFProperties implements java.io.Serializable {
 
     /**
      * Set password, null by default.
+     * @param password
      */
     public void setPassword(final String password) {
-        this.password = password;
+        this.password = Strings.toCharArray(password);
     }
 
     /**
      * Get password, may be null.
      */
-    public String getPassword() {
+    public char[] getPassword() {
         return password;
     }
 
@@ -160,6 +161,7 @@ public class JmsMCFProperties implements java.io.Serializable {
     /**
      * Test for equality.
      */
+    @Override
     public boolean equals(Object obj) {
         if (obj == null) return false;
 
@@ -176,6 +178,7 @@ public class JmsMCFProperties implements java.io.Serializable {
     /**
      * Simple hashCode of all attributes.
      */
+    @Override
     public int hashCode() {
         // FIXME
         String result = "" + userName + password + type;

@@ -34,6 +34,7 @@ import javax.resource.spi.ManagedConnectionFactory;
 import javax.security.auth.Subject;
 
 import org.jboss.logging.Logger;
+import org.jboss.resource.adapter.jms.util.Strings;
 
 /**
  * Jms ManagedConectionFactory
@@ -119,7 +120,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
         }
 
         // OK we got autentication stuff
-        JmsManagedConnection mc = new JmsManagedConnection(this, info, cred.name, cred.pwd);
+        JmsManagedConnection mc = new JmsManagedConnection(this, info, cred.name, Strings.fromCharArray(cred.pwd));
 
         if (trace) {
             log.trace("created new managed connection: " + mc);
@@ -264,7 +265,7 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
      * Get password, may be null.
      * @return 
      */
-    public String getPassword() {
+    public char[] getPassword() {
         return mcfProperties.getPassword();
     }
 
