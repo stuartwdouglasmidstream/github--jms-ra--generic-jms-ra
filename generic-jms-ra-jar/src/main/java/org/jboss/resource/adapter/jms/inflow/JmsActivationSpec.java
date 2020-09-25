@@ -34,6 +34,7 @@ import javax.resource.spi.InvalidPropertyException;
 import javax.resource.spi.ResourceAdapter;
 
 import org.jboss.logging.Logger;
+import org.jboss.resource.adapter.jms.util.Strings;
 
 /**
  * A generic jms ActivationSpec.
@@ -101,7 +102,7 @@ public class JmsActivationSpec implements ActivationSpec {
     /**
      * The password
      */
-    private String pass;
+    private char[] pass;
 
     /**
      * The maximum number of messages
@@ -361,7 +362,7 @@ public class JmsActivationSpec implements ActivationSpec {
     /**
      * @return the password.
      */
-    public String getPassword() {
+    public char[] getPassword() {
         return pass;
     }
 
@@ -369,7 +370,7 @@ public class JmsActivationSpec implements ActivationSpec {
      * @param pass The password to set.
      */
     public void setPassword(String pass) {
-        this.pass = pass;
+        this.pass = Strings.toCharArray(pass);
     }
 
     /**
@@ -462,7 +463,7 @@ public class JmsActivationSpec implements ActivationSpec {
 
     @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append(JmsActivation.defaultToString(this)).append('(');
         buffer.append("ra=").append(ra);
         buffer.append(" destination=").append(destination);

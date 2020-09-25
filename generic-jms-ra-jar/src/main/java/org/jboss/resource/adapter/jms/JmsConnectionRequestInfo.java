@@ -35,7 +35,7 @@ import org.jboss.resource.adapter.jms.util.Strings;
  */
 public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
     private String userName;
-    private String password;
+    private char[] password;
     private String clientID;
 
     private boolean transacted = true;
@@ -85,12 +85,16 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
         userName = name;
     }
 
-    public String getPassword() {
+    public char[] getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public void setPassword(char[] password) {
         this.password = password;
+    }
+
+    public void setPassword(String password) {
+        this.password = Strings.toCharArray(password);
     }
 
     public String getClientID() {
@@ -150,7 +154,7 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
             hashCode += userName.hashCode();
         }
         if (password != null) {
-            hashCode += password.hashCode();
+            hashCode += new String(password).hashCode();
         }
         if (clientID != null) {
             hashCode += clientID.hashCode();
@@ -161,7 +165,7 @@ public class JmsConnectionRequestInfo implements ConnectionRequestInfo {
     @Override
     public String toString() {
         return "JmsConnectionRequestInfo{" + "userName=" + userName
-                + ", password=" + password + ", clientID=" + clientID
+                + ", password=****, clientID=" + clientID
                 + ", transacted=" + transacted
                 + ", acknowledgeMode=" + acknowledgeMode + ", type=" + type + '}';
     }

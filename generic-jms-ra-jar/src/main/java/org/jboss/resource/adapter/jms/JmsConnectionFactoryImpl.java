@@ -36,6 +36,7 @@ import javax.resource.spi.ConnectionManager;
 import javax.resource.spi.ManagedConnectionFactory;
 
 import org.jboss.logging.Logger;
+import org.jboss.resource.adapter.jms.util.Strings;
 import org.jboss.resource.adapter.jms.util.TransactionUtils;
 
 /**
@@ -80,6 +81,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
         }
     }
 
+    @Override
     public void setReference(final Reference reference) {
         this.reference = reference;
 
@@ -108,7 +110,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
     public QueueConnection createQueueConnection(String userName, String password) throws JMSException {
         JmsSessionFactoryImpl s = new JmsSessionFactoryImpl(mcf, cm, QUEUE);
         s.setUserName(userName);
-        s.setPassword(password);
+        s.setPassword(Strings.toCharArray(password));
 
         if (log.isTraceEnabled()) {
             log.trace("Created queue connection: " + s);
@@ -170,10 +172,11 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
         return tc;
     }
 
+    @Override
     public TopicConnection createTopicConnection(String userName, String password) throws JMSException {
         JmsSessionFactoryImpl s = new JmsSessionFactoryImpl(mcf, cm, TOPIC);
         s.setUserName(userName);
-        s.setPassword(password);
+        s.setPassword(Strings.toCharArray(password));
 
         if (log.isTraceEnabled()) {
             log.trace("Created topic connection: " + s);
@@ -199,7 +202,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
     public Connection createConnection(String userName, String password) throws JMSException {
         JmsSessionFactoryImpl s = new JmsSessionFactoryImpl(mcf, cm, AGNOSTIC);
         s.setUserName(userName);
-        s.setPassword(password);
+        s.setPassword(Strings.toCharArray(password));
 
         if (log.isTraceEnabled()) {
             log.trace("Created connection: " + s);
@@ -229,7 +232,7 @@ public class JmsConnectionFactoryImpl implements JmsConnectionFactory, Reference
     public JMSContext createContext(String userName, String password, int sessionMode) {
         JmsSessionFactoryImpl s = new JmsSessionFactoryImpl(mcf, cm, JMS_CONTEXT);
         s.setUserName(userName);
-        s.setPassword(password);
+        s.setPassword(Strings.toCharArray(password));
         int effectiveSessionMode = sessionMode;
         if (TransactionUtils.isInTransaction()) {
             effectiveSessionMode = Session.SESSION_TRANSACTED;

@@ -46,6 +46,7 @@ import javax.transaction.TransactionManager;
 import java.lang.reflect.Method;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jboss.resource.adapter.jms.util.Strings;
 
 /**
  * A generic jms Activation.
@@ -409,11 +410,11 @@ public class JmsActivation implements ExceptionListener {
         log.debug("setup connection " + this);
 
         String user = spec.getUser();
-        String pass = spec.getPassword();
+        char[] pass = spec.getPassword();
         String clientID = spec.getClientId();
         String connectionFactory = spec.getConnectionFactory();
 
-        connection = setupConnection(ctx, user, pass, clientID, connectionFactory);
+        connection = setupConnection(ctx, user, Strings.fromCharArray(pass), clientID, connectionFactory);
 
         log.debug("established connection " + this);
     }

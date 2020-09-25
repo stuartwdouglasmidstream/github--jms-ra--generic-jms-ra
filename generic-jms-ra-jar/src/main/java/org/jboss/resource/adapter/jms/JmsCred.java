@@ -43,7 +43,7 @@ import javax.resource.spi.security.PasswordCredential;
 public class JmsCred {
     public String name;
 
-    public String pwd;
+    public char[] pwd;
 
     public JmsCred() {
         // empty
@@ -71,7 +71,7 @@ public class JmsCred {
                 throw new SecurityException("No Password credentials found");
             }
             jc.name = pwdc.getUserName();
-            jc.pwd = new String(pwdc.getPassword());
+            jc.pwd = pwdc.getPassword();
         } else {
             throw new SecurityException("No Subject or ConnectionRequestInfo set, could not get credentials");
         }
