@@ -265,8 +265,8 @@ public class JmsManagedConnectionFactory implements ManagedConnectionFactory {
      * Get password, may be null.
      * @return 
      */
-    public char[] getPassword() {
-        return mcfProperties.getPassword();
+    public String getPassword() {
+        return Strings.fromCharArray(mcfProperties.getPassword());
     }
 
     /**
