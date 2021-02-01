@@ -410,7 +410,7 @@ public class JmsActivation implements ExceptionListener {
         log.debug("setup connection " + this);
 
         String user = spec.getUser();
-        char[] pass = spec.getPassword();
+        char[] pass = spec.getPasswordChars();
         String clientID = spec.getClientId();
         String connectionFactory = spec.getConnectionFactory();
 

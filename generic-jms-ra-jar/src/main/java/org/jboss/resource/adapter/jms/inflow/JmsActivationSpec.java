@@ -361,8 +361,18 @@ public class JmsActivationSpec implements ActivationSpec {
 
     /**
      * @return the password.
+     * @deprecated use getPasswordChars
      */
-    public char[] getPassword() {
+    @Deprecated
+    public String getPassword() {
+        log.warn("You shouldn't use getPassword() on JMSActivationSpec");
+        return Strings.fromCharArray(getPasswordChars());
+    }
+
+    /**
+     * @return the password.
+     */
+    public char[] getPasswordChars() {
         return pass;
     }
 
